@@ -27,7 +27,7 @@ function seed(): State {
     overrides: [{ id: "o1", start: addDays(t, 60), end: addDays(t, 66), price: 240, minNights: 3, label: "Holiday period (demo)" }],
     reviews: [
       { id: "r1", name: "Elena P.", rating: 5, text: "Spotless, warm and beautifully renovated. Everything within a short walk.", date: addDays(t, -35), status: "approved", sample: true },
-      { id: "r2", name: "Γιώργος Κ.", rating: 5, text: "Υπέροχο, ζεστό σπίτι στο κέντρο. Ο τζάκι-ατμός δημιουργεί μοναδική ατμόσφαιρα.", date: addDays(t, -60), status: "approved", sample: true },
+      { id: "r2", name: "Γιώργος Κ.", rating: 5, text: "Υπέροχο, ζεστό σπίτι στο κέντρο. Το τζάκι ατμού δημιουργεί μοναδική ατμόσφαιρα.", date: addDays(t, -60), status: "approved", sample: true },
       { id: "r3", name: "James C.", rating: 5, text: "Perfect for our family. Comfortable beds and a lovely rear balcony.", date: addDays(t, -7), status: "pending", sample: true, bookingCode: "MM-DEMO02" },
     ],
     settings: { address: "", phone: "+30 000 000 0000", notifyEmail: true, notifyPush: true, ownerEmail: "info@mmhome.gr" },
