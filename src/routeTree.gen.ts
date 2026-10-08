@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AmenitiesRouteImport } from './routes/amenities'
+import { Route as BookRouteImport } from './routes/book'
 import { Route as LocationRouteImport } from './routes/location'
+import { Route as MyBookingRouteImport } from './routes/my-booking'
 import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as StayRouteImport } from './routes/stay'
 import { Route as ReviewCodeRouteImport } from './routes/review.$code'
@@ -26,9 +28,19 @@ const AmenitiesRoute = AmenitiesRouteImport.update({
   path: '/amenities',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookRoute = BookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocationRoute = LocationRouteImport.update({
   id: '/location',
   path: '/location',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyBookingRoute = MyBookingRouteImport.update({
+  id: '/my-booking',
+  path: '/my-booking',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewsRoute = ReviewsRouteImport.update({
@@ -50,7 +62,9 @@ const ReviewCodeRoute = ReviewCodeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/amenities': typeof AmenitiesRoute
+  '/book': typeof BookRoute
   '/location': typeof LocationRoute
+  '/my-booking': typeof MyBookingRoute
   '/reviews': typeof ReviewsRoute
   '/stay': typeof StayRoute
   '/review/$code': typeof ReviewCodeRoute
@@ -58,7 +72,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/amenities': typeof AmenitiesRoute
+  '/book': typeof BookRoute
   '/location': typeof LocationRoute
+  '/my-booking': typeof MyBookingRoute
   '/reviews': typeof ReviewsRoute
   '/stay': typeof StayRoute
   '/review/$code': typeof ReviewCodeRoute
@@ -67,7 +83,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/amenities': typeof AmenitiesRoute
+  '/book': typeof BookRoute
   '/location': typeof LocationRoute
+  '/my-booking': typeof MyBookingRoute
   '/reviews': typeof ReviewsRoute
   '/stay': typeof StayRoute
   '/review/$code': typeof ReviewCodeRoute
@@ -75,14 +93,31 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/amenities' | '/location' | '/reviews' | '/stay' | '/review/$code'
+    | '/'
+    | '/amenities'
+    | '/book'
+    | '/location'
+    | '/my-booking'
+    | '/reviews'
+    | '/stay'
+    | '/review/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/amenities' | '/location' | '/reviews' | '/stay' | '/review/$code'
+  to:
+    | '/'
+    | '/amenities'
+    | '/book'
+    | '/location'
+    | '/my-booking'
+    | '/reviews'
+    | '/stay'
+    | '/review/$code'
   id:
     | '__root__'
     | '/'
     | '/amenities'
+    | '/book'
     | '/location'
+    | '/my-booking'
     | '/reviews'
     | '/stay'
     | '/review/$code'
@@ -91,7 +126,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AmenitiesRoute: typeof AmenitiesRoute
+  BookRoute: typeof BookRoute
   LocationRoute: typeof LocationRoute
+  MyBookingRoute: typeof MyBookingRoute
   ReviewsRoute: typeof ReviewsRoute
   StayRoute: typeof StayRoute
   ReviewCodeRoute: typeof ReviewCodeRoute
@@ -113,11 +150,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AmenitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book': {
+      id: '/book'
+      path: '/book'
+      fullPath: '/book'
+      preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/location': {
       id: '/location'
       path: '/location'
       fullPath: '/location'
       preLoaderRoute: typeof LocationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-booking': {
+      id: '/my-booking'
+      path: '/my-booking'
+      fullPath: '/my-booking'
+      preLoaderRoute: typeof MyBookingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reviews': {
@@ -147,7 +198,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AmenitiesRoute: AmenitiesRoute,
+  BookRoute: BookRoute,
   LocationRoute: LocationRoute,
+  MyBookingRoute: MyBookingRoute,
   ReviewsRoute: ReviewsRoute,
   StayRoute: StayRoute,
   ReviewCodeRoute: ReviewCodeRoute,

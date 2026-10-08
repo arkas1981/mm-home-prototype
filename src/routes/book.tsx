@@ -6,7 +6,7 @@ import { meta } from "@/lib/meta";
 import { todayISO, uid, update, useStore } from "@/lib/store";
 import { MonthCalendar } from "@/components/MonthCalendar";
 import { PageTitle } from "@/components/site";
-import { addDays, diffDays, genCode, LEAD_DAYS, MAX_GUESTS, minNightsFor, nightTaken, nightsOf, quote, validateStay, type Booking, type RateType } from "@/lib/booking";
+import { diffDays, genCode, LEAD_DAYS, MAX_GUESTS, minNightsFor, nightTaken, nightsOf, quote, validateStay, type Booking, type RateType } from "@/lib/booking";
 
 export const Route = createFileRoute("/book")({
   head: () => meta("Κράτηση — MM Home Τρίκαλα", "Κάντε απευθείας κράτηση στο MM Home. Ενιαία τιμή για 1–6 επισκέπτες, χωρίς κρυφές χρεώσεις."),
@@ -180,4 +180,3 @@ function Book() {
   );
 }
 
-export { addDays };
