@@ -10,33 +10,141 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AmenitiesRouteImport } from './routes/amenities'
+import { Route as BookRouteImport } from './routes/book'
+import { Route as LocationRouteImport } from './routes/location'
+import { Route as MyBookingRouteImport } from './routes/my-booking'
+import { Route as ReviewsRouteImport } from './routes/reviews'
+import { Route as StayRouteImport } from './routes/stay'
+import { Route as ReviewCodeRouteImport } from './routes/review.$code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AmenitiesRoute = AmenitiesRouteImport.update({
+  id: '/amenities',
+  path: '/amenities',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookRoute = BookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocationRoute = LocationRouteImport.update({
+  id: '/location',
+  path: '/location',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyBookingRoute = MyBookingRouteImport.update({
+  id: '/my-booking',
+  path: '/my-booking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewsRoute = ReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StayRoute = StayRouteImport.update({
+  id: '/stay',
+  path: '/stay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewCodeRoute = ReviewCodeRouteImport.update({
+  id: '/review/$code',
+  path: '/review/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/amenities': typeof AmenitiesRoute
+  '/book': typeof BookRoute
+  '/location': typeof LocationRoute
+  '/my-booking': typeof MyBookingRoute
+  '/reviews': typeof ReviewsRoute
+  '/stay': typeof StayRoute
+  '/review/$code': typeof ReviewCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/amenities': typeof AmenitiesRoute
+  '/book': typeof BookRoute
+  '/location': typeof LocationRoute
+  '/my-booking': typeof MyBookingRoute
+  '/reviews': typeof ReviewsRoute
+  '/stay': typeof StayRoute
+  '/review/$code': typeof ReviewCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/amenities': typeof AmenitiesRoute
+  '/book': typeof BookRoute
+  '/location': typeof LocationRoute
+  '/my-booking': typeof MyBookingRoute
+  '/reviews': typeof ReviewsRoute
+  '/stay': typeof StayRoute
+  '/review/$code': typeof ReviewCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/amenities'
+    | '/book'
+    | '/location'
+    | '/my-booking'
+    | '/reviews'
+    | '/stay'
+    | '/review/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/amenities'
+    | '/book'
+    | '/location'
+    | '/my-booking'
+    | '/reviews'
+    | '/stay'
+    | '/review/$code'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/amenities'
+    | '/book'
+    | '/location'
+    | '/my-booking'
+    | '/reviews'
+    | '/stay'
+    | '/review/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  AmenitiesRoute: typeof AmenitiesRoute
+  BookRoute: typeof BookRoute
+  LocationRoute: typeof LocationRoute
+  MyBookingRoute: typeof MyBookingRoute
+  ReviewsRoute: typeof ReviewsRoute
+  StayRoute: typeof StayRoute
+  ReviewCodeRoute: typeof ReviewCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +156,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/amenities': {
+      id: '/amenities'
+      path: '/amenities'
+      fullPath: '/amenities'
+      preLoaderRoute: typeof AmenitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book': {
+      id: '/book'
+      path: '/book'
+      fullPath: '/book'
+      preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/location': {
+      id: '/location'
+      path: '/location'
+      fullPath: '/location'
+      preLoaderRoute: typeof LocationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-booking': {
+      id: '/my-booking'
+      path: '/my-booking'
+      fullPath: '/my-booking'
+      preLoaderRoute: typeof MyBookingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reviews': {
+      id: '/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof ReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stay': {
+      id: '/stay'
+      path: '/stay'
+      fullPath: '/stay'
+      preLoaderRoute: typeof StayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review/$code': {
+      id: '/review/$code'
+      path: '/review/$code'
+      fullPath: '/review/$code'
+      preLoaderRoute: typeof ReviewCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  AmenitiesRoute: AmenitiesRoute,
+  BookRoute: BookRoute,
+  LocationRoute: LocationRoute,
+  MyBookingRoute: MyBookingRoute,
+  ReviewsRoute: ReviewsRoute,
+  StayRoute: StayRoute,
+  ReviewCodeRoute: ReviewCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
