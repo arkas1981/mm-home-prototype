@@ -13,10 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AmenitiesRouteImport } from './routes/amenities'
 import { Route as BookRouteImport } from './routes/book'
+import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as LocationRouteImport } from './routes/location'
 import { Route as MyBookingRouteImport } from './routes/my-booking'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as StayRouteImport } from './routes/stay'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ReviewCodeRouteImport } from './routes/review.$code'
 
 const IndexRoute = IndexRouteImport.update({
@@ -39,6 +42,11 @@ const BookRoute = BookRouteImport.update({
   path: '/book',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocationRoute = LocationRouteImport.update({
   id: '/location',
   path: '/location',
@@ -49,6 +57,11 @@ const MyBookingRoute = MyBookingRouteImport.update({
   path: '/my-booking',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReviewsRoute = ReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
@@ -57,6 +70,11 @@ const ReviewsRoute = ReviewsRouteImport.update({
 const StayRoute = StayRouteImport.update({
   id: '/stay',
   path: '/stay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewCodeRoute = ReviewCodeRouteImport.update({
@@ -70,10 +88,13 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/amenities': typeof AmenitiesRoute
   '/book': typeof BookRoute
+  '/cookies': typeof CookiesRoute
   '/location': typeof LocationRoute
   '/my-booking': typeof MyBookingRoute
+  '/privacy': typeof PrivacyRoute
   '/reviews': typeof ReviewsRoute
   '/stay': typeof StayRoute
+  '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
 }
 export interface FileRoutesByTo {
@@ -81,10 +102,13 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/amenities': typeof AmenitiesRoute
   '/book': typeof BookRoute
+  '/cookies': typeof CookiesRoute
   '/location': typeof LocationRoute
   '/my-booking': typeof MyBookingRoute
+  '/privacy': typeof PrivacyRoute
   '/reviews': typeof ReviewsRoute
   '/stay': typeof StayRoute
+  '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
 }
 export interface FileRoutesById {
@@ -93,10 +117,13 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/amenities': typeof AmenitiesRoute
   '/book': typeof BookRoute
+  '/cookies': typeof CookiesRoute
   '/location': typeof LocationRoute
   '/my-booking': typeof MyBookingRoute
+  '/privacy': typeof PrivacyRoute
   '/reviews': typeof ReviewsRoute
   '/stay': typeof StayRoute
+  '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
 }
 export interface FileRouteTypes {
@@ -106,10 +133,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/amenities'
     | '/book'
+    | '/cookies'
     | '/location'
     | '/my-booking'
+    | '/privacy'
     | '/reviews'
     | '/stay'
+    | '/terms'
     | '/review/$code'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,10 +147,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/amenities'
     | '/book'
+    | '/cookies'
     | '/location'
     | '/my-booking'
+    | '/privacy'
     | '/reviews'
     | '/stay'
+    | '/terms'
     | '/review/$code'
   id:
     | '__root__'
@@ -128,10 +161,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/amenities'
     | '/book'
+    | '/cookies'
     | '/location'
     | '/my-booking'
+    | '/privacy'
     | '/reviews'
     | '/stay'
+    | '/terms'
     | '/review/$code'
   fileRoutesById: FileRoutesById
 }
@@ -140,10 +176,13 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AmenitiesRoute: typeof AmenitiesRoute
   BookRoute: typeof BookRoute
+  CookiesRoute: typeof CookiesRoute
   LocationRoute: typeof LocationRoute
   MyBookingRoute: typeof MyBookingRoute
+  PrivacyRoute: typeof PrivacyRoute
   ReviewsRoute: typeof ReviewsRoute
   StayRoute: typeof StayRoute
+  TermsRoute: typeof TermsRoute
   ReviewCodeRoute: typeof ReviewCodeRoute
 }
 
@@ -177,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/location': {
       id: '/location'
       path: '/location'
@@ -191,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyBookingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reviews': {
       id: '/reviews'
       path: '/reviews'
@@ -203,6 +256,13 @@ declare module '@tanstack/react-router' {
       path: '/stay'
       fullPath: '/stay'
       preLoaderRoute: typeof StayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review/$code': {
@@ -220,10 +280,13 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AmenitiesRoute: AmenitiesRoute,
   BookRoute: BookRoute,
+  CookiesRoute: CookiesRoute,
   LocationRoute: LocationRoute,
   MyBookingRoute: MyBookingRoute,
+  PrivacyRoute: PrivacyRoute,
   ReviewsRoute: ReviewsRoute,
   StayRoute: StayRoute,
+  TermsRoute: TermsRoute,
   ReviewCodeRoute: ReviewCodeRoute,
 }
 export const routeTree = rootRouteImport
