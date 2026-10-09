@@ -11,7 +11,7 @@ export interface Booking {
   id: string; code: string; checkIn: string; checkOut: string; guests: number;
   name: string; email: string; phone: string; rate: RateType; total: number;
   status: "confirmed" | "cancelled"; refund?: number; createdAt: string;
-  source: "web" | "manual"; note?: string;
+  source: "web" | "manual"; note?: string; depositStatus?: "not-authorized" | "authorized" | "release-initiated" | "issue"; cancellationReason?: "guest" | "host" | "no-show" | "early-departure";
 }
 export interface Block { id: string; start: string; end: string; reason: string } // end exclusive (checkout-style)
 export interface Override { id: string; start: string; end: string; price?: number; minNights?: number; label?: string } // end inclusive
@@ -55,7 +55,7 @@ export function validateStay(ci: string, co: string, today: string, bookings: Bo
 
 export function refundFor(b: Pick<Booking, "rate" | "total" | "checkIn">, today: string) {
   const daysBefore = diffDays(today, b.checkIn);
-  const percent = b.rate === "nonref" ? 0 : daysBefore >= FULL_REFUND_DAYS ? 100 : 50;
+  const percent = daysBefore < 0 ? 0 : b.rate === "nonref" ? 0 : daysBefore >= FULL_REFUND_DAYS ? 100 : 50;
   return { percent, amount: Math.round((b.total * percent) / 100), daysBefore };
 }
 
