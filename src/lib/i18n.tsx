@@ -28,7 +28,7 @@ const el = {
   amen: {
     title: "Παροχές", sub: "Όλα όσα χρειάζεστε, οργανωμένα με απλότητα.",
     cats: [
-      { t: "Άνεση & κλίμα", i: ["Ενδοδαπέδια θέρμανση σε όλο το σπίτι", "Κλιματιστικό Inventor Black μόνο στο σαλόνι", "Συνεχές ζεστό νερό", "Ηλεκτρικά ρολά και σίτες", "Ενεργειακά διπλά τζάμια triplex", "Εξωτερική θερμομόνωση"] },
+      { t: "Άνεση & κλίμα", i: ["Ενδοδαπέδια θέρμανση σε όλο το σπίτι", "Smart κλιματιστικό Inventor Black μόνο στο σαλόνι", "Συνεχές ζεστό νερό", "Ηλεκτρικά ρολά και σίτες", "Ενεργειακά διπλά τζάμια triplex", "Εξωτερική θερμομόνωση"] },
       { t: "Σύνδεση & ψυχαγωγία", i: ["Fiber Wi‑Fi 300 Mbps", "Smart TV 65\" με Netflix", "TV 32\" σε κάθε υπνοδωμάτιο", "Χώρος εργασίας σε κάθε υπνοδωμάτιο"] },
       { t: "Κουζίνα", i: ["Nespresso με δωρεάν καφέ, τσάι, ζάχαρη και νερό", "Βραστήρας, φρυγανιέρα, τοστιέρα", "Εντοιχισμένος φούρνος, μικροκύματα", "Ψυγειοκαταψύκτης, εντοιχισμένο πλυντήριο πιάτων, απορροφητήρας", "Σκεύη και σερβίτσια για 6", "Τραπεζαρία για 6"] },
       { t: "Φροντίδα & πλύσιμο", i: ["Πλυντήριο-στεγνωτήριο 2 σε 1", "Σίδερο και σιδερώστρα, απλώστρα", "Ηλεκτρική σκούπα", "Πιστολάκι μαλλιών, πετσέτες", "Σαμπουάν, αφρόλουτρο, κρεμοσάπουνο"] },
@@ -49,7 +49,7 @@ const el = {
     included: "Καθαρισμός περιλαμβάνεται. Χωρίς κρυφές χρεώσεις — αυτό είναι το τελικό σύνολο.",
     name: "Ονοματεπώνυμο", email: "Email", phone: "Κινητό", guests: "Αριθμός επισκεπτών",
     adult: "Ο κύριος επισκέπτης είναι 18 ετών και άνω.", id: "Κατά το προσωπικό check-in θα ζητηθεί ταυτότητα ή διαβατήριο.",
-    terms: "Αποδέχομαι τους όρους κράτησης και την πολιτική ακύρωσης.", nrAck: "Κατανοώ ότι η κράτηση είναι μη επιστρέψιμη και δεν θα λάβω καμία επιστροφή.",
+    terms: "Έχω διαβάσει και αποδέχομαι τους Όρους Κράτησης & Διαμονής και την Πολιτική Ακύρωσης του MM Home.", nrAck: "Αναγνωρίζω ότι επέλεξα τη μη επιστρέψιμη τιμή με έκπτωση 10% και δεν δικαιούμαι επιστροφή σε ακύρωση.",
     invalid: "Συμπληρώστε σωστά όλα τα πεδία και αποδεχτείτε τους όρους.",
     payT: "Demo πληρωμή", payNote: "Πρωτότυπο: δεν γίνεται πραγματική χρέωση και δεν συλλέγονται στοιχεία κάρτας.", pay: "Ολοκλήρωση demo πληρωμής",
     doneT: "Η κράτησή σας επιβεβαιώθηκε", code: "Κωδικός κράτησης", doneNote: "Προσωπικό check-in από τις 15:00 — θα σας υποδεχτούμε εμείς. Φέρτε ταυτότητα ή διαβατήριο.", manage: "Διαχείριση κράτησης",
@@ -90,7 +90,7 @@ const en: Dict = {
   amen: {
     title: "Amenities", sub: "Everything you need, simply organised.",
     cats: [
-      { t: "Comfort & climate", i: ["Whole-home underfloor heating", "Inventor Black air conditioning in the living room only", "Continuous hot water", "Electric shutters and insect screens", "Energy-efficient double glazing, laminated/triplex glass", "External thermal insulation"] },
+      { t: "Comfort & climate", i: ["Whole-home underfloor heating", "Smart Inventor Black air conditioning in the living room only", "Continuous hot water", "Electric shutters and insect screens", "Energy-efficient double glazing, laminated/triplex glass", "External thermal insulation"] },
       { t: "Connectivity & entertainment", i: ["Fiber Wi‑Fi 300 Mbps", "65\" Smart TV with Netflix", "32\" TV in every bedroom", "Workspace in every bedroom"] },
       { t: "Kitchen", i: ["Nespresso with complimentary coffee, tea, sugar and water", "Kettle, toaster, sandwich/toast maker", "Built-in oven, microwave", "Fridge/freezer, built-in dishwasher, extractor", "Cookware and tableware for 6", "Dining table for 6"] },
       { t: "Care & laundry", i: ["Washer-dryer 2-in-1", "Iron and board, drying rack", "Vacuum cleaner", "Hair dryer, towels", "Shampoo, shower gel, hand soap"] },
@@ -111,7 +111,7 @@ const en: Dict = {
     included: "Cleaning included. No hidden fees — this is your final total.",
     name: "Full name", email: "Email", phone: "Mobile", guests: "Number of guests",
     adult: "The main guest is 18 years or older.", id: "An ID card or passport will be requested at personal check-in.",
-    terms: "I accept the booking terms and cancellation policy.", nrAck: "I understand this booking is non-refundable and I will receive no refund.",
+    terms: "I have read and accept the Booking & Stay Terms and Cancellation Policy of MM Home.", nrAck: "I acknowledge the 10% discounted non-refundable rate and that cancellation receives no refund.",
     invalid: "Please complete all fields correctly and accept the terms.",
     payT: "Demo payment", payNote: "Prototype: no real charge is made and no card details are collected.", pay: "Complete demo payment",
     doneT: "Your booking is confirmed", code: "Booking code", doneNote: "Personal check-in from 15:00 — we will welcome you in person. Please bring an ID card or passport.", manage: "Manage booking",
@@ -131,9 +131,9 @@ const Ctx = createContext<{ lang: Lang; t: Dict; setLang: (l: Lang) => void }>({
 
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLangS] = useState<Lang>("el");
-  useEffect(() => { const s = localStorage.getItem("mmhome-lang"); if (s === "en" || s === "el") setLangS(s); }, []);
+  useEffect(() => { const s = new URLSearchParams(window.location.search).get("lang") || localStorage.getItem("mmhome-lang"); if (s === "en" || s === "el") setLangS(s); }, []);
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
-  const setLang = (l: Lang) => { setLangS(l); localStorage.setItem("mmhome-lang", l); };
+  const setLang = (l: Lang) => { setLangS(l); localStorage.setItem("mmhome-lang", l); const url = new URL(window.location.href); url.searchParams.set("lang", l); window.history.replaceState(null, "", url); window.dispatchEvent(new Event("mm-language")); };
   return <Ctx.Provider value={{ lang, t: dicts[lang], setLang }}>{children}</Ctx.Provider>;
 }
 export const useT = () => useContext(Ctx);

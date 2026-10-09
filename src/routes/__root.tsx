@@ -14,6 +14,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LangProvider } from "@/lib/i18n";
+import { CookieConsent } from "@/components/CookieConsent";
 import { SiteFooter, SiteHeader } from "@/components/site";
 
 function NotFoundComponent() {
@@ -90,6 +91,7 @@ function RootComponent() {
         {!isAdmin && <SiteHeader />}
         <main className="min-h-[60vh]"><Outlet /></main>
         {!isAdmin && <SiteFooter />}
+        {!isAdmin && <CookieConsent />}
       </LangProvider>
     </QueryClientProvider>
   );

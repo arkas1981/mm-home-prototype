@@ -73,7 +73,7 @@
     font-family: var(--font-sans);
     font-weight: 350;
   }
-  h1, h2, h3, h4 { font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.01em; }
+  h1, h2, h3, h4 { font-family: var(--font-serif); font-weight: 500; letter-spacing: 0; }
 }
 
 @utility eyebrow {
@@ -111,3 +111,5 @@
   animation: fadeUp .8s ease both;
 }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }

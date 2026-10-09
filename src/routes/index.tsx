@@ -13,7 +13,7 @@ function Home() {
   const { t } = useT();
   return (
     <>
-      <section className="relative h-[88vh] min-h-[560px] overflow-hidden">
+      <section className="relative h-[75svh] min-h-[480px] overflow-hidden">
         <img src={photos.living} alt="MM Home" width={1600} height={1008} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-foreground/10 to-transparent" />
         <div className="relative z-10 mx-auto max-w-7xl h-full px-5 flex flex-col justify-end pb-16 text-background fade-up">
@@ -49,7 +49,7 @@ function Home() {
         <img src={photos.balcony} alt="" loading="lazy" width={1408} height={1008} className="rounded-2xl w-full h-[460px] object-cover" />
       </section>
 
-      <section className="mx-auto max-w-3xl px-5 text-center panel py-14">
+      <section className="mx-auto max-w-3xl px-5 text-center border-t py-14">
         <p className="eyebrow">{t.common.from}</p>
         <p className="font-serif text-5xl mt-2">€{BASE_RATE} <span className="text-xl text-muted-foreground">{t.common.perNight}</span></p>
         <p className="mt-4 text-muted-foreground">{t.home.priceNote}</p>
