@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
 import { fmtDate, useT } from "@/lib/i18n";
 import { meta } from "@/lib/meta";
@@ -13,12 +13,17 @@ export const Route = createFileRoute("/book")({
   component: Book,
 });
 
+import { DepositNotice } from "@/components/DepositNotice";
+import { acceptanceValid, feeBreakdown } from "@/lib/policies";
+import { trackFunnel } from "@/lib/analytics";
+
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Book() {
   const { t, lang } = useT();
   const s = useStore();
   const today = todayISO();
+  useEffect(() => { trackFunnel("availability_opened"); }, []);
   const [step, setStep] = useState(0);
   const [ci, setCi] = useState<string | null>(null);
   const [co, setCo] = useState<string | null>(null);
@@ -53,13 +58,13 @@ function Book() {
   };
   const errText = stayErr ? t.book.errors[stayErr].replace("{n}", String(ci ? minNightsFor(ci, s.overrides) : 2)) : "";
 
-  const detailsOk = f.name.trim().length > 1 && emailRe.test(f.email.trim()) && f.phone.replace(/\D/g, "").length >= 8 && f.adult && f.terms && (rate === "flexible" || f.nrAck);
+  const detailsOk = f.name.trim().length > 1 && emailRe.test(f.email.trim()) && f.phone.replace(/\D/g, "").length >= 8 && acceptanceValid(rate, f.adult, f.terms, f.nrAck);
 
   const pay = () => {
-    if (!ci || !co || !q || validateStay(ci, co, today, s.bookings, s.blocks, s.overrides)) return;
+    if (!detailsOk || !ci || !co || !q || validateStay(ci, co, today, s.bookings, s.blocks, s.overrides)) return;
     const b: Booking = { id: uid(), code: genCode(), checkIn: ci, checkOut: co, guests: f.guests, name: f.name.trim(), email: f.email.trim().toLowerCase(), phone: f.phone.trim(), rate, total: q.total, status: "confirmed", createdAt: today, source: "web" };
     update((st) => ({ ...st, bookings: [...st.bookings, b] }));
-    setDone(b); setStep(4);
+    trackFunnel("booking_completed"); setDone(b); setStep(4);
   };
 
   const Summary = () => ci && co && q ? (
@@ -67,7 +72,10 @@ function Book() {
       <div className="flex justify-between"><span>{t.common.checkIn}</span><span>{fmtDate(ci, lang)} · 15:00</span></div>
       <div className="flex justify-between"><span>{t.common.checkOut}</span><span>{fmtDate(co, lang)} · 11:00</span></div>
       <div className="flex justify-between"><span>{n} {t.common.nights}</span><span>{rate === "flexible" ? t.book.flexT : t.book.nrT}</span></div>
-      <div className="flex justify-between border-t pt-3 font-serif text-2xl"><span>{t.common.total}</span><span>€{q.total}</span></div>
+      <div className="flex justify-between border-t pt-3"><span>{lang === "el" ? "Διαμονή" : "Accommodation"}</span><span>€{feeBreakdown(q.total,n,s.settings.climateFee).accommodation.toFixed(2)}</span></div>
+       <div className="flex justify-between gap-4"><span>{lang === "el" ? "Τέλος Ανθεκτικότητας στην Κλιματική Κρίση (περιλαμβάνεται)" : "Climate Crisis Resilience Fee (included)"}</span><span>€{feeBreakdown(q.total,n,s.settings.climateFee).fee.toFixed(2)}</span></div>
+       <p className="text-xs text-muted-foreground">{lang === "el" ? "Δοκιμαστική, ρυθμιζόμενη ανάλυση — εκκρεμεί επιβεβαίωση λογιστή." : "Demo, configurable breakdown — pending accountant verification."}</p>
+       <div className="flex justify-between border-t pt-3 font-serif text-2xl"><span>{t.common.total}</span><span>€{q.total}</span></div>
       <p className="text-xs text-muted-foreground">{t.book.included}</p>
     </div>
   ) : null;
@@ -103,7 +111,7 @@ function Book() {
               </label>
               {stayErr && <p className="text-sm text-destructive">{errText}</p>}
               {!stayErr && <Summary />}
-              <button className="btn-gold w-full" disabled={!ci || !co || !!stayErr} onClick={() => setStep(1)}>{t.common.next}</button>
+              <button className="btn-gold w-full" disabled={!ci || !co || !!stayErr} onClick={() => { trackFunnel("booking_started"); setStep(1); }}>{t.common.next}</button>
             </div>
           </div>
         )}
@@ -140,12 +148,14 @@ function Book() {
               {([["adult", t.book.adult], ["terms", t.book.terms], ...(rate === "nonref" ? [["nrAck", t.book.nrAck]] : [])] as [keyof typeof f, string][]).map(([k, label]) => (
                 <label key={k} className="flex gap-3 text-sm items-start"><input type="checkbox" className="mt-1 accent-primary" checked={f[k] as boolean} onChange={(e) => setF({ ...f, [k]: e.target.checked })} />{label}</label>
               ))}
-              {err && <p className="text-sm text-destructive">{err}</p>}
+              <Link to="/terms" target="_blank" className="text-primary underline text-sm">{lang === "el" ? "Όροι Κράτησης & Διαμονής · Πολιτική Ακύρωσης" : "Booking & Stay Terms · Cancellation Policy"}</Link>
+               <DepositNotice />
+               {err && <p className="text-sm text-destructive">{err}</p>}
             </div>
             <div className="space-y-4">
               <Summary />
               <div className="flex gap-3">
-                <button className="btn-line" onClick={() => setStep(1)}>{t.common.back}</button>
+                <button className="btn-line" onClick={() => { trackFunnel("booking_started"); setStep(1); }}>{t.common.back}</button>
                 <button className="btn-gold flex-1" onClick={() => (detailsOk ? (setErr(""), setStep(3)) : setErr(t.book.invalid))}>{t.common.next}</button>
               </div>
             </div>
@@ -158,7 +168,8 @@ function Book() {
               <ShieldCheck className="mx-auto text-primary" size={40} />
               <p className="font-serif text-3xl">{t.book.payT}</p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">{t.book.payNote}</p>
-              <button className="btn-gold" onClick={pay}>{t.book.pay} · €{q?.total}</button>
+              <DepositNotice />
+               <button className="btn-gold" onClick={pay}>{t.book.pay} · €{q?.total}</button>
             </div>
             <div className="space-y-4"><Summary /><button className="btn-line" onClick={() => setStep(2)}>{t.common.back}</button></div>
           </div>
@@ -172,7 +183,9 @@ function Book() {
             <p className="font-serif text-4xl tracking-widest text-primary">{done.code}</p>
             <p className="mt-6">{fmtDate(done.checkIn, lang)} → {fmtDate(done.checkOut, lang)} · {done.guests} {t.common.guests} · €{done.total}</p>
             <p className="mt-6 text-muted-foreground">{t.book.doneNote}</p>
-            <Link to="/my-booking" className="btn-line mt-8">{t.book.manage}</Link>
+            <div className="mt-6 text-left"><DepositNotice /></div>
+             <p className="mt-4 text-sm text-muted-foreground">{lang === "el" ? "Θα λάβετε άλλο μήνυμα 2 ημέρες πριν την άφιξη (προεπισκόπηση επίδειξης, χωρίς αποστολή)." : "Another message is scheduled 2 days before arrival (demo preview, no sending)."}</p>
+             <Link to="/my-booking" className="btn-line mt-8">{t.book.manage}</Link>
           </div>
         )}
       </div>

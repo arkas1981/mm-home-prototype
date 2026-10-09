@@ -4,6 +4,7 @@ import { fmtDate, useT } from "@/lib/i18n";
 import { meta } from "@/lib/meta";
 import { todayISO, update, useStore } from "@/lib/store";
 import { PageTitle } from "@/components/site";
+import { DepositNotice } from "@/components/DepositNotice";
 import { diffDays, refundFor } from "@/lib/booking";
 
 export const Route = createFileRoute("/my-booking")({
@@ -50,6 +51,8 @@ function MyBooking() {
             <Row k={t.my.policy} v={b.rate === "flexible" ? t.book.flex : t.book.nr} />
             <Row k={t.common.total} v={`€${b.total} · ${t.my.paid}`} />
             {b.status === "cancelled" && <Row k={t.my.refunded} v={`€${b.refund ?? 0}`} />}
+            <DepositNotice />
+            <p className="mt-4 text-muted-foreground">{lang === "el" ? "Αλλαγή επισκεπτών δωρεάν έως 6 με ενημέρωση πριν το check-in. Μη εμφάνιση ή πρόωρη αναχώρηση: καμία επιστροφή." : "Guest changes are free up to 6 when notified before check-in. No-show or early departure: no refund."}</p>
             <p className="mt-5 text-muted-foreground">{t.my.change} {settings.phone} · info@mmhome.gr</p>
             {b.status === "confirmed" && diffDays(today, b.checkIn) > 0 && (
               <div className="mt-6">

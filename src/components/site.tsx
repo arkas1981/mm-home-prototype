@@ -6,11 +6,8 @@ import { useStore } from "@/lib/store";
 
 /** Placeholder for the circular M&M logo. Replace with <img src={logo} /> when the final file arrives. */
 export function Logo({ size = 44 }: { size?: number }) {
-  return (
-    <span className="inline-flex items-center justify-center rounded-full border border-primary text-primary font-serif" style={{ width: size, height: size, fontSize: size * 0.36 }}>
-      M&amp;M
-    </span>
-  );
+  const { lang } = useT();
+  return <span role="img" aria-label={lang === "el" ? "Θέση επίσημου PNG λογότυπου" : "Official logo PNG slot"} title={lang === "el" ? "Αναμονή ακριβούς επίσημου PNG" : "Awaiting exact official PNG"} className="inline-flex items-center justify-center rounded-full border border-dashed border-primary text-primary text-[9px] leading-tight text-center shrink-0" style={{ width: size, height: size }}>PNG</span>;
 }
 
 export function LangSwitch() {
@@ -62,7 +59,7 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const { settings } = useStore();
   return (
     <footer className="mt-24 border-t bg-secondary/50">
@@ -73,17 +70,19 @@ export function SiteFooter() {
         </div>
         <div className="space-y-2 text-sm">
           <p className="eyebrow mb-3">{t.footer.contact}</p>
-          <p className="flex items-center gap-2"><Phone size={15} /> {settings.phone}</p>
+          <p className="flex items-center gap-2"><Phone size={15} /> <a href={`tel:${settings.phone.replace(/[^+0-9]/g, "")}`}>{settings.phone}</a></p>
           <a href="mailto:info@mmhome.gr" className="flex items-center gap-2"><Mail size={15} /> info@mmhome.gr</a>
-          <p className="flex items-center gap-2"><MessageCircle size={15} /> Viber: {settings.phone}</p>
+          <p className="flex items-center gap-2"><MessageCircle size={15} /> {settings.viberUrl ? <a href={settings.viberUrl}>Viber</a> : <span>Viber · {lang === "el" ? "σύντομα" : "coming soon"}</span>}</p>
           <div className="flex gap-4 pt-2 text-muted-foreground">
-            <a href="#" aria-label="Facebook"><Facebook size={18} /></a>
-            <a href="#" aria-label="Instagram"><Instagram size={18} /></a>
+            {settings.facebookUrl ? <a href={settings.facebookUrl} aria-label="Facebook"><Facebook size={18} /></a> : <span title="Facebook"><Facebook size={18} /></span>}
+            {settings.instagramUrl ? <a href={settings.instagramUrl} aria-label="Instagram"><Instagram size={18} /></a> : <span title="Instagram"><Instagram size={18} /></span>}
           </div>
         </div>
         <div className="text-sm text-muted-foreground space-y-2">
           <p>{settings.address || t.common.addressPending}</p>
-          <p>Τρίκαλα / Trikala, Greece</p>
+          <p>{lang === "el" ? "Τρίκαλα, Ελλάδα" : "Trikala, Greece"}</p>
+          <p>{lang === "el" ? "ΑΜΑ" : "AMA"}: {settings.ama || (lang === "el" ? "αναμένεται" : "pending")}</p>
+          <div className="flex flex-col gap-2 pt-3"><Link to="/privacy">{lang === "el" ? "Πολιτική Απορρήτου" : "Privacy Policy"}</Link><Link to="/cookies">Cookies</Link><Link to="/terms">{lang === "el" ? "Όροι Κράτησης" : "Booking Terms"}</Link></div>
           <p className="pt-4">© 2026 MM Home. {t.footer.rights}</p>
         </div>
       </div>
