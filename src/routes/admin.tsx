@@ -211,7 +211,7 @@ function BookingDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const rows: [string, string][] = [["Code", b.code], ["Status", b.status], ["Guest", b.name], ["Email", b.email], ["Mobile", b.phone], ["Guests", String(b.guests)], ["Check-in", fd(b.checkIn) + " · 15:00"], ["Check-out", fd(b.checkOut) + " · 11:00"], ["Nights", String(diffDays(b.checkIn, b.checkOut))], ["Rate", b.rate === "flexible" ? "Flexible" : "Non-refundable"], ["Total paid (demo)", eur(b.total)], ["Refund", b.refund != null ? eur(b.refund) : "—"], ["Source", b.source], ["Review link", `/review/${b.code}`]];
   const setStatus = (status: "confirmed" | "cancelled") => {
     if (status === "confirmed" && validateStay(b.checkIn, b.checkOut, addDays(b.checkIn, -999), s.bookings.filter((x) => x.id !== b.id), s.blocks, []) === "taken") return alert("Dates are no longer free.");
-    update((st) => ({ ...st, bookings: st.bookings.map((x) => (x.id === b.id ? { ...x, status, refund: status === "cancelled" ? x.refund ?? 0 : undefined } : x)) }));
+    update((st) => ({ ...st, bookings: st.bookings.map((x) => { if (x.id !== b.id) return x; if (status === "cancelled") return { ...x, status, refund: x.refund ?? 0 }; const { refund: _refund, ...rest } = x; return { ...rest, status }; }) }));
   };
   return (
     <div className="space-y-4 max-w-xl">
@@ -228,7 +228,7 @@ function Pricing() {
   const [f, setF] = useState({ start: addDays(today, 30), end: addDays(today, 33), price: "", min: "", label: "" });
   const add = () => {
     if (f.end < f.start || (!f.price && !f.min)) return;
-    update((st) => ({ ...st, overrides: [...st.overrides, { id: uid(), start: f.start, end: f.end, price: f.price ? Math.max(1, +f.price) : undefined, minNights: f.min ? Math.max(1, +f.min) : undefined, label: f.label }] }));
+    update((st) => ({ ...st, overrides: [...st.overrides, { id: uid(), start: f.start, end: f.end, ...(f.price ? { price: Math.max(1, +f.price) } : {}), ...(f.min ? { minNights: Math.max(1, +f.min) } : {}), label: f.label }] }));
     setF({ ...f, price: "", min: "", label: "" });
   };
   return (
@@ -330,6 +330,7 @@ function Emails() {
     { t: "Post-checkout thank-you", subj: `Thank you for staying at MM Home`, body: [`Dear ${b.name},`, `Thank you for choosing MM Home. We hope you felt at home.`, `We'd love to hear about your stay: https://mmhome.gr/review/${b.code} (unique verified-stay link).`] },
   ];
   const e = list[which];
+  if (!e) return null;
   return (
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">{list.map((x, i) => <button key={x.t} onClick={() => setWhich(i)} className={`px-3 py-1.5 rounded-full text-xs border ${i === which ? "bg-foreground text-background" : ""}`}>{x.t}</button>)}</div>

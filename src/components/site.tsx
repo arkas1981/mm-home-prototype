@@ -72,6 +72,7 @@ export function SiteFooter() {
           <p className="eyebrow mb-3">{t.footer.contact}</p>
           <p className="flex items-center gap-2"><Phone size={15} /> <a href={`tel:${settings.phone.replace(/[^+0-9]/g, "")}`}>{settings.phone}</a></p>
           <a href="mailto:info@mmhome.gr" className="flex items-center gap-2"><Mail size={15} /> info@mmhome.gr</a>
+          <p>www.mmhome.gr</p>
           <p className="flex items-center gap-2"><MessageCircle size={15} /> {settings.viberUrl ? <a href={settings.viberUrl}>Viber</a> : <span>Viber · {lang === "el" ? "σύντομα" : "coming soon"}</span>}</p>
           <div className="flex gap-4 pt-2 text-muted-foreground">
             {settings.facebookUrl ? <a href={settings.facebookUrl} aria-label="Facebook"><Facebook size={18} /></a> : <span title="Facebook"><Facebook size={18} /></span>}
@@ -81,7 +82,6 @@ export function SiteFooter() {
         <div className="text-sm text-muted-foreground space-y-2">
           <p>{settings.address || t.common.addressPending}</p>
           <p>{lang === "el" ? "Τρίκαλα, Ελλάδα" : "Trikala, Greece"}</p>
-          <p>{lang === "el" ? "ΑΜΑ" : "AMA"}: {settings.ama || (lang === "el" ? "αναμένεται" : "pending")}</p>
           <div className="flex flex-col gap-2 pt-3"><Link to="/privacy">{lang === "el" ? "Πολιτική Απορρήτου" : "Privacy Policy"}</Link><Link to="/cookies">Cookies</Link><Link to="/terms">{lang === "el" ? "Όροι Κράτησης" : "Booking Terms"}</Link></div>
           <p className="pt-4">© 2026 MM Home. {t.footer.rights}</p>
         </div>

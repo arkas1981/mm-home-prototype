@@ -18,7 +18,7 @@ export interface Override { id: string; start: string; end: string; price?: numb
 
 export const toISO = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-export const parseISO = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+export const parseISO = (s: string) => { const [y, m, d] = s.split("-").map(Number); if (y === undefined || m === undefined || d === undefined) return new Date(NaN); return new Date(y, m - 1, d); };
 export const addDays = (s: string, n: number) => { const d = parseISO(s); d.setDate(d.getDate() + n); return toISO(d); };
 export const diffDays = (a: string, b: string) => Math.round((parseISO(b).getTime() - parseISO(a).getTime()) / 86400000);
 export const nightsOf = (ci: string, co: string) => { const r: string[] = []; for (let d = ci; d < co; d = addDays(d, 1)) r.push(d); return r; };

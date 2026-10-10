@@ -13,13 +13,16 @@ function Home() {
   const { t } = useT();
   return (
     <>
-      <section className="relative h-[75svh] min-h-[480px] overflow-hidden">
+      <section className="relative min-h-[620px] md:min-h-[660px] h-[78svh] overflow-hidden">
         <img src={photos.living} alt="MM Home" width={1600} height={1008} className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-foreground/10 to-transparent" />
-        <div className="relative z-10 mx-auto max-w-7xl h-full px-5 flex flex-col justify-end pb-16 text-background fade-up">
-          <p className="eyebrow !text-background/85">{t.home.eyebrow}</p>
-          <h1 className="mt-4 text-6xl md:text-8xl">MM Home</h1>
-          <p className="mt-2 font-serif italic text-2xl md:text-3xl">{SLOGAN}</p>
+        <div className="absolute inset-0 bg-foreground/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/40 to-transparent" />
+        <div className="relative z-10 mx-auto max-w-7xl h-full px-5 flex flex-col justify-end pb-10 md:pb-16 text-background fade-up">
+          <p className="font-serif text-3xl">MM Home</p>
+          <h1 className="mt-4 text-4xl md:text-6xl max-w-4xl leading-[1.08]">{t.home.headline}</h1>
+          <p className="mt-4 text-base md:text-lg max-w-xl">{t.home.supporting}</p>
+          <p className="mt-4 text-sm md:text-base">{t.home.heroFacts}</p>
+          <p className="mt-3 font-serif italic text-xl">{SLOGAN}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/book" className="btn-gold">{t.common.bookNow}</Link>
             <Link to="/stay" className="btn-line !border-background !text-background hover:!bg-background hover:!text-foreground">{t.home.explore}</Link>
@@ -27,7 +30,7 @@ function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-5 py-24 text-center">
+      <section className="mx-auto max-w-5xl px-5 py-12 md:py-20 text-center">
         <p className="font-serif text-3xl md:text-4xl leading-snug">{t.home.intro}</p>
         <div className="mt-12 grid grid-cols-2 md:grid-cols-6 gap-y-6 text-sm tracking-wide text-muted-foreground">
           {t.home.facts.map((f) => <div key={f} className="border-l first:border-l-0 md:px-2">{f}</div>)}
