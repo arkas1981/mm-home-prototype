@@ -10,7 +10,7 @@ export interface State { bookings: Booking[]; blocks: Block[]; overrides: Overri
 const KEY = "mmhome-demo-v1";
 export const todayISO = () => toISO(new Date());
 
-export const defaultSettings: Settings = { address: "", phone: "+30 000 000 0000", notifyEmail: true, notifyPush: true, ownerEmail: "info@mmhome.gr", ama: "", mapsUrl: "", viberUrl: "", facebookUrl: "", instagramUrl: "", climateFee: 0, analyticsId: "", analyticsEnabled: false, searchConsole: "", privacyContact: "info@mmhome.gr", emailTemplates: {} };
+export const defaultSettings: Settings = { address: "Ασκληπιού 44, Τρίκαλα", phone: "+30 694 245 0826", notifyEmail: true, notifyPush: true, ownerEmail: "info@mmhome.gr", ama: "", mapsUrl: "https://www.google.com/maps/dir/?api=1&destination=%CE%91%CF%83%CE%BA%CE%BB%CE%B7%CF%80%CE%B9%CE%BF%CF%8D+44%2C+%CE%A4%CF%81%CE%AF%CE%BA%CE%B1%CE%BB%CE%B1", viberUrl: "viber://chat?number=%2B306942450826", facebookUrl: "", instagramUrl: "", climateFee: 0, analyticsId: "", analyticsEnabled: false, searchConsole: "", privacyContact: "info@mmhome.gr", emailTemplates: {} };
 function seed(): State {
   const t = todayISO();
   const mk = (id: string, code: string, ci: number, co: number, name: string, email: string, rate: "flexible" | "nonref", guests: number, source: "web" | "manual" = "web"): Booking => {
@@ -42,7 +42,7 @@ const listeners = new Set<() => void>();
 
 function load(): State {
   if (state) return state;
-  try { const raw = localStorage.getItem(KEY); const saved = raw ? (JSON.parse(raw) as State) : seed(); state = { ...saved, settings: { ...defaultSettings, ...saved.settings } }; } catch { state = seed(); }
+  try { const raw = localStorage.getItem(KEY); const saved = raw ? (JSON.parse(raw) as State) : seed(); state = { ...saved, settings: { ...defaultSettings, ...saved.settings, address: saved.settings.address && !saved.settings.address.includes("ανακοινωθεί") ? saved.settings.address : defaultSettings.address, phone: !saved.settings.phone || saved.settings.phone === "+30 000 000 0000" ? defaultSettings.phone : saved.settings.phone, mapsUrl: saved.settings.mapsUrl || defaultSettings.mapsUrl, viberUrl: saved.settings.viberUrl || defaultSettings.viberUrl } }; } catch { state = seed(); }
   return state;
 }
 export function update(fn: (s: State) => State) {
