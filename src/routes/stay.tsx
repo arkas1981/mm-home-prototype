@@ -11,7 +11,7 @@ export const Route = createFileRoute("/stay")({
   component: Stay,
 });
 
-function Block({ images, title, children }: { images: { id: string; src: string }[]; title: string; children: React.ReactNode }) {
+function Block({ images, title, children }: { images: { id: string; src: string }[]; title: string; children?: React.ReactNode }) {
   return (
     <section className="mx-auto max-w-7xl px-5 mb-20">
       <RoomGallery images={images} title={title} />
@@ -41,7 +41,7 @@ function Stay() {
       <section className="mx-auto max-w-7xl px-5 mb-8"><h2 className="text-4xl">{s.bathroomsT}</h2></section>
       <Block images={roomPhotos.bathroom} title={s.bathroomT}><p>{s.bathroom}</p></Block>
       <Block images={roomPhotos.laundry} title={s.wcT}><p>{s.wc}</p></Block>
-      <section className="mx-auto max-w-7xl px-5 mb-20"><h2 className="text-4xl mb-8 max-w-3xl">{s.outT}</h2><div className="grid md:grid-cols-2 gap-10">{[[roomPhotos.front, s.frontT, s.outFront], [roomPhotos.rear, s.rearT, s.outRear]].map(([images, title, body]) => <div key={String(title)}><RoomGallery images={images as {id:string;src:string}[]} title={String(title)}/><h3 className="text-3xl mt-6">{String(title)}</h3><p className="mt-3 text-muted-foreground leading-relaxed">{String(body)}</p></div>)}</div></section>
+      <section className="mx-auto max-w-7xl px-5 mb-20"><h2 className="text-4xl mb-8 max-w-3xl">{s.outT}</h2><div className="grid md:grid-cols-2 gap-10">{[{images:roomPhotos.front, title:s.frontT, body:s.outFront}, {images:roomPhotos.rear, title:s.rearT, body:s.outRear}].map(({images, title, body}) => <div key={title}><RoomGallery images={images} title={title}/><h3 className="text-3xl mt-6">{title}</h3><p className="mt-3 text-muted-foreground leading-relaxed">{body}</p></div>)}</div></section>
       <div className="text-center"><Button asChild className="btn-gold h-auto"><Link to="/book">{t.common.bookNow}</Link></Button></div>
     </>
   );
