@@ -3,11 +3,11 @@ import { useState } from "react";
 import { Menu, X, Phone, Mail, MessageCircle, Facebook, Instagram } from "lucide-react";
 import { SLOGAN, useT } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
+import logoSrc from "@/assets/mmhome-logo.png";
 
-/** Placeholder for the circular M&M logo. Replace with <img src={logo} /> when the final file arrives. */
+/** Official MM Home emblem (exact uploaded file, downscaled only). */
 export function Logo({ size = 44 }: { size?: number }) {
-  const { lang } = useT();
-  return <span role="img" aria-label={lang === "el" ? "Θέση επίσημου PNG λογότυπου" : "Official logo PNG slot"} title={lang === "el" ? "Αναμονή ακριβούς επίσημου PNG" : "Awaiting exact official PNG"} className="inline-flex items-center justify-center rounded-full border border-dashed border-primary text-primary text-[9px] leading-tight text-center shrink-0" style={{ width: size, height: size }}>PNG</span>;
+  return <img src={logoSrc} alt="MM Home" width={size} height={size} className="shrink-0 object-contain" style={{ width: size, height: size }} />;
 }
 
 export function LangSwitch() {
