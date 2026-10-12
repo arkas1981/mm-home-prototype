@@ -108,12 +108,12 @@ const en: Dict = {
   amen: {
     title: "Amenities", sub: "Everything you need, simply organised.",
     cats: [
-      { t: "Comfort & climate", i: ["Whole-home underfloor heating", "Smart Inventor Black air conditioning in the living room only", "Continuous hot water", "Electric shutters and insect screens", "Energy-efficient double glazing, laminated/triplex glass", "External thermal insulation"] },
+      { t: "Comfort & climate", i: ["Whole-home underfloor heating", "Smart Inventor Black air conditioning in the living room", "Continuous hot water", "Electric shutters and insect screens", "Energy-efficient double glazing, laminated/triplex glass", "External thermal insulation"] },
       { t: "Connectivity & entertainment", i: ["Fiber Wi‑Fi 300 Mbps", "65\" Smart TV with Netflix", "32\" TV in every bedroom", "Workspace in every bedroom"] },
       { t: "Kitchen", i: ["Nespresso with complimentary coffee, tea, sugar and water", "Kettle, toaster, sandwich/toast maker", "Built-in oven, microwave", "Fridge/freezer, built-in dishwasher, extractor", "Cookware and tableware for 6", "Dining table for 6"] },
       { t: "Care & laundry", i: ["Washer-dryer 2-in-1", "Iron and board, drying rack", "Vacuum cleaner", "Hair dryer, towels", "Shampoo, shower gel, hand soap"] },
       { t: "Safety", i: ["Security door", "Intercom", "Fire extinguisher", "First aid kit", "Smoke detector"] },
-      { t: "House rules & parking", i: ["No pets", "No smoking indoors", "No parties or events", "Street parking only — generally easy"] },
+      { t: "House rules & parking", i: ["No pets", "No smoking indoors", "No parties or events", "Street parking — generally easy"] },
     ],
   },
   loc: { title: "Location", sub: "In central Trikala — everything on foot.", map: "DIRECTIONS TO MM HOME", items: [["Central square", "~5 min walk"], ["Train station", "~5 min walk"], ["Matsopoulos Mill / Mill of Elves", "~5 min walk"], ["Restaurants, cafés, supermarket", "Nearby"]] },
