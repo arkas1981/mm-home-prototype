@@ -188,7 +188,7 @@ export const confirmBooking = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!/^cs_test_[A-Za-z0-9]+$/.test(data.sessionId ?? "")) return { error: "invalid" as const };
     const session = await stripeGetSession(data.sessionId); // authoritative server-side verification
-    const bookingId = session.metadata?.booking_id;
+    const bookingId = session.metadata?.["booking_id"];
     if (!bookingId) return { error: "invalid" as const };
     const admin = await adminClient();
     if (session.payment_status !== "paid") {
