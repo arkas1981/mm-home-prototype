@@ -31,8 +31,7 @@ function Home() {
       </section>
 
       <section className="mx-auto max-w-5xl px-5 py-12 md:py-20 text-center">
-        <p className="font-serif text-3xl md:text-4xl leading-snug">{t.home.intro}</p>
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-6 gap-y-6 text-sm tracking-wide text-muted-foreground">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-y-6 text-sm tracking-wide text-muted-foreground">
           {t.home.facts.map((f) => <div key={f} className="border-l first:border-l-0 md:px-2">{f}</div>)}
         </div>
       </section>
