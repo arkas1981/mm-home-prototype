@@ -1,9 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import { adminAddBlock, adminAddOverride, adminCreateBooking, adminData, adminRemoveBlock, adminRemoveOverride, adminSetBookingStatus } from "@/lib/cloud.functions";
+import { toBlock, toBooking, toOverride, type BookingRow } from "@/lib/cloud-data";
+import type { Block, Override } from "@/lib/booking";
 import { ChevronLeft, ChevronRight, Lock, LogOut } from "lucide-react";
 import { meta } from "@/lib/meta";
-import { resetDemo, todayISO, uid, update, useStore, type State } from "@/lib/store";
-import { addDays, diffDays, flexRateFor, genCode, minNightsFor, nightTaken, nonRefOf, quote, toISO, validateStay, type Booking, type RateType } from "@/lib/booking";
+import { todayISO, update, useStore } from "@/lib/store";
+import { addDays, diffDays, flexRateFor, minNightsFor, nightTaken, nonRefOf, quote, toISO, validateStay, type Booking, type RateType } from "@/lib/booking";
 import { MonthCalendar } from "@/components/MonthCalendar";
 import { Logo } from "@/components/site";
 import { SLOGAN } from "@/lib/i18n";
@@ -20,20 +25,39 @@ const fd = (iso: string) => new Date(iso + "T12:00:00").toLocaleDateString("en-G
 // Placeholder payment fee model (e.g. card processor) — replace once Stripe pricing is final.
 const feeOf = (gross: number, count: number) => Math.round(gross * 0.015 + count * 0.25);
 
+type AdminState = { bookings: Booking[]; blocks: Block[]; overrides: Override[]; reload: () => Promise<void> };
+const AdminCtx = createContext<AdminState>({ bookings: [], blocks: [], overrides: [], reload: async () => {} });
+const useAdmin = () => useContext(AdminCtx);
+
 function Admin() {
-  const [authed, setAuthed] = useState(false);
+  const [authed, setAuthed] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>("Dashboard");
   const [detail, setDetail] = useState<string | null>(null);
-  useEffect(() => { setAuthed(sessionStorage.getItem("mm-admin") === "1"); }, []);
-  if (!authed) return <AdminLogin onIn={() => { sessionStorage.setItem("mm-admin", "1"); setAuthed(true); }} />;
+  const fetchData = useServerFn(adminData);
+  const [data, setData] = useState<Omit<AdminState, "reload">>({ bookings: [], blocks: [], overrides: [] });
+  const reload = useCallback(async () => {
+    const d = await fetchData();
+    setData({ bookings: (d.bookings as BookingRow[]).filter((b) => b.status !== "pending").map(toBooking), blocks: d.blocks.map(toBlock), overrides: d.overrides.map(toOverride) });
+  }, [fetchData]);
+  const check = useCallback(async () => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return setAuthed(false);
+    const { data: ok } = await supabase.rpc("has_role", { _user_id: u.user.id, _role: "admin" });
+    setAuthed(!!ok);
+    if (ok) await reload().catch(() => setAuthed(false));
+  }, [reload]);
+  useEffect(() => { check(); }, [check]);
+  if (authed === null) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+  if (!authed) return <AdminLogin onIn={check} />;
   return (
+    <AdminCtx.Provider value={{ ...data, reload }}>
     <div className="min-h-screen bg-muted/40">
       <header className="sticky top-0 z-30 bg-background border-b">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2"><Logo size={32} /><span className="font-serif text-xl">MM Home Admin</span><span className="text-[10px] uppercase tracking-widest border rounded-full px-2 py-0.5 text-primary border-primary">Demo</span></div>
+          <div className="flex items-center gap-2"><Logo size={32} /><span className="font-serif text-xl">MM Home Admin</span><span className="text-[10px] uppercase tracking-widest border rounded-full px-2 py-0.5 text-primary border-primary">Stripe test</span></div>
           <div className="flex items-center gap-3 text-sm">
             <Link to="/" className="text-muted-foreground hidden sm:inline">View site</Link>
-            <button onClick={() => { sessionStorage.removeItem("mm-admin"); setAuthed(false); }} aria-label="Log out"><LogOut size={18} /></button>
+            <button onClick={async () => { await supabase.auth.signOut(); setAuthed(false); }} aria-label="Log out"><LogOut size={18} /></button>
           </div>
         </div>
         <nav className="mx-auto max-w-6xl px-4 flex gap-1 overflow-x-auto pb-2">
@@ -55,20 +79,29 @@ function Admin() {
         )}
       </div>
     </div>
+    </AdminCtx.Provider>
   );
 }
 
 function AdminLogin({ onIn }: { onIn: () => void }) {
+  const [email, setEmail] = useState(""); const [pw, setPw] = useState(""); const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setBusy(true); setErr("");
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw });
+    setBusy(false);
+    if (error) return setErr("Sign-in failed. Check your email and password.");
+    onIn();
+  };
   return (
     <div className="min-h-screen flex items-center justify-center px-5">
-      <div className="panel p-8 w-full max-w-sm text-center space-y-4">
+      <form onSubmit={submit} className="panel p-8 w-full max-w-sm text-center space-y-4">
         <Logo size={56} />
         <h1 className="text-3xl">MM Home Admin</h1>
-        <p className="text-sm text-muted-foreground">Demo access — real sign-in will be added with the live backend.</p>
-        <input className="field" placeholder="Email" defaultValue="owner@mmhome.gr" disabled />
-        <input className="field" type="password" placeholder="Password" defaultValue="demo" disabled />
-        <button className="btn-gold w-full" onClick={onIn}><Lock size={14} /> Enter demo admin</button>
-      </div>
+        <input className="field" type="email" autoComplete="username" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input className="field" type="password" autoComplete="current-password" placeholder="Password" value={pw} onChange={(e) => setPw(e.target.value)} required />
+        {err && <p className="text-sm text-destructive">{err}</p>}
+        <button className="btn-gold w-full" disabled={busy}><Lock size={14} /> Sign in</button>
+      </form>
     </div>
   );
 }
@@ -80,7 +113,7 @@ const Card = ({ label, value, sub }: { label: string; value: string; sub?: strin
 function revenueOf(b: Booking) { return b.status === "confirmed" ? b.total : b.total - (b.refund ?? 0); }
 
 function Dashboard() {
-  const s = useStore();
+  const s = useAdmin();
   const [year, setYear] = useState(new Date().getFullYear());
   const months = useMemo(() => Array.from({ length: 12 }, (_, m) => {
     const inMonth = s.bookings.filter((b) => { const d = new Date(b.checkIn + "T12:00"); return d.getFullYear() === year && d.getMonth() === m; });
@@ -122,13 +155,12 @@ function Dashboard() {
           <tbody>{months.map((x) => <tr key={x.m} className="border-t"><td className="p-3">{new Date(2000, x.m).toLocaleString("en-GB", { month: "short" })}</td><td className="p-3">{eur(x.gross)}</td><td className="p-3">{eur(x.fees)}</td><td className="p-3">{eur(x.gross - x.fees)}</td><td className="p-3">{x.count}</td><td className="p-3">{x.nights}</td><td className="p-3">{x.occ}%</td></tr>)}</tbody>
         </table>
       </div>
-      <button className="text-xs text-muted-foreground underline" onClick={() => confirm("Reset all demo data?") && resetDemo()}>Reset demo data</button>
     </div>
   );
 }
 
 function AdminCalendar({ onOpen }: { onOpen: (id: string) => void }) {
-  const s = useStore();
+  const s = useAdmin();
   const [off, setOff] = useState(0);
   const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + off);
   const info = (iso: string) => {
@@ -159,7 +191,7 @@ function AdminCalendar({ onOpen }: { onOpen: (id: string) => void }) {
 }
 
 function Bookings({ onOpen }: { onOpen: (id: string) => void }) {
-  const s = useStore();
+  const s = useAdmin();
   const [show, setShow] = useState(false);
   const list = [...s.bookings].sort((a, b) => b.checkIn.localeCompare(a.checkIn));
   return (
@@ -179,15 +211,17 @@ function Bookings({ onOpen }: { onOpen: (id: string) => void }) {
 }
 
 function ManualBooking({ onDone }: { onDone: () => void }) {
-  const s = useStore();
+  const s = useAdmin();
   const today = todayISO();
   const [f, setF] = useState({ name: "", email: "", phone: "", guests: 2, ci: addDays(today, 7), co: addDays(today, 9), rate: "flexible" as RateType });
   const err = f.co <= f.ci ? "Check-out must be after check-in" : (() => { const e = validateStay(f.ci, f.co, addDays(f.ci, -999), s.bookings, s.blocks, []); return e === "taken" ? "Dates unavailable" : null; })();
   const q = f.co > f.ci ? quote(f.ci, f.co, f.rate, s.overrides) : null;
-  const save = () => {
+  const create = useServerFn(adminCreateBooking);
+  const save = async () => {
     if (err || !q || !f.name.trim() || !f.email.trim()) return;
-    update((st) => ({ ...st, bookings: [...st.bookings, { id: uid(), code: genCode(), checkIn: f.ci, checkOut: f.co, guests: f.guests, name: f.name.trim(), email: f.email.trim().toLowerCase(), phone: f.phone, rate: f.rate, total: q.total, status: "confirmed", createdAt: today, source: "manual" }] }));
-    onDone();
+    const r = await create({ data: { checkIn: f.ci, checkOut: f.co, guests: f.guests, name: f.name, email: f.email, phone: f.phone, rate: f.rate } });
+    if ("error" in r && r.error) return alert(r.error === "taken" ? "Dates unavailable" : "Could not save");
+    await s.reload(); onDone();
   };
   return (
     <div className="panel p-5 grid sm:grid-cols-2 gap-3">
@@ -205,13 +239,15 @@ function ManualBooking({ onDone }: { onDone: () => void }) {
 }
 
 function BookingDetail({ id, onBack }: { id: string; onBack: () => void }) {
-  const s = useStore();
+  const s = useAdmin();
+  const setFn = useServerFn(adminSetBookingStatus);
   const b = s.bookings.find((x) => x.id === id);
   if (!b) return null;
-  const rows: [string, string][] = [["Code", b.code], ["Status", b.status], ["Guest", b.name], ["Email", b.email], ["Mobile", b.phone], ["Guests", String(b.guests)], ["Check-in", fd(b.checkIn) + " · 15:00"], ["Check-out", fd(b.checkOut) + " · 11:00"], ["Nights", String(diffDays(b.checkIn, b.checkOut))], ["Rate", b.rate === "flexible" ? "Flexible" : "Non-refundable"], ["Total paid (demo)", eur(b.total)], ["Refund", b.refund != null ? eur(b.refund) : "—"], ["Source", b.source], ["Review link", `/review/${b.code}`]];
-  const setStatus = (status: "confirmed" | "cancelled") => {
-    if (status === "confirmed" && validateStay(b.checkIn, b.checkOut, addDays(b.checkIn, -999), s.bookings.filter((x) => x.id !== b.id), s.blocks, []) === "taken") return alert("Dates are no longer free.");
-    update((st) => ({ ...st, bookings: st.bookings.map((x) => { if (x.id !== b.id) return x; if (status === "cancelled") return { ...x, status, refund: x.refund ?? 0 }; const { refund: _refund, ...rest } = x; return { ...rest, status }; }) }));
+  const rows: [string, string][] = [["Code", b.code], ["Status", b.status], ["Guest", b.name], ["Email", b.email], ["Mobile", b.phone], ["Guests", String(b.guests)], ["Check-in", fd(b.checkIn) + " · 15:00"], ["Check-out", fd(b.checkOut) + " · 11:00"], ["Nights", String(diffDays(b.checkIn, b.checkOut))], ["Rate", b.rate === "flexible" ? "Flexible" : "Non-refundable"], ["Total paid", eur(b.total)], ["Refund", b.refund != null ? eur(b.refund) : "—"], ["Source", b.source], ["Review link", `/review/${b.code}`]];
+  const setStatus = async (status: "confirmed" | "cancelled") => {
+    const r = await setFn({ data: { id: b.id, status } });
+    if ("error" in r && r.error) return alert("Dates are no longer free.");
+    await s.reload();
   };
   return (
     <div className="space-y-4 max-w-xl">
@@ -223,13 +259,14 @@ function BookingDetail({ id, onBack }: { id: string; onBack: () => void }) {
 }
 
 function Pricing() {
-  const s = useStore();
+  const s = useAdmin();
   const today = todayISO();
   const [f, setF] = useState({ start: addDays(today, 30), end: addDays(today, 33), price: "", min: "", label: "" });
-  const add = () => {
+  const addFn = useServerFn(adminAddOverride); const rmFn = useServerFn(adminRemoveOverride);
+  const add = async () => {
     if (f.end < f.start || (!f.price && !f.min)) return;
-    update((st) => ({ ...st, overrides: [...st.overrides, { id: uid(), start: f.start, end: f.end, ...(f.price ? { price: Math.max(1, +f.price) } : {}), ...(f.min ? { minNights: Math.max(1, +f.min) } : {}), label: f.label }] }));
-    setF({ ...f, price: "", min: "", label: "" });
+    await addFn({ data: { start: f.start, end: f.end, ...(f.price ? { price: +f.price } : {}), ...(f.min ? { minNights: +f.min } : {}), label: f.label } });
+    await s.reload(); setF({ ...f, price: "", min: "", label: "" });
   };
   return (
     <div className="space-y-4">
@@ -245,7 +282,7 @@ function Pricing() {
       {s.overrides.map((o) => (
         <div key={o.id} className="panel p-4 flex justify-between items-center gap-3 text-sm">
           <div><p>{fd(o.start)} → {fd(o.end)} {o.label && <span className="text-muted-foreground">· {o.label}</span>}</p><p className="text-xs text-muted-foreground">{o.price ? `Flex €${o.price} / Non-ref €${nonRefOf(o.price)}` : "Default price"} · {o.minNights ? `min ${o.minNights} nights` : "default min"}</p></div>
-          <button className="text-destructive text-xs" onClick={() => update((st) => ({ ...st, overrides: st.overrides.filter((x) => x.id !== o.id) }))}>Remove</button>
+          <button className="text-destructive text-xs" onClick={async () => { await rmFn({ data: { id: o.id } }); await s.reload(); }}>Remove</button>
         </div>
       ))}
       <p className="text-xs text-muted-foreground">Check today+30: flexible €{flexRateFor(addDays(today, 30), s.overrides)}, min {minNightsFor(addDays(today, 30), s.overrides)} nights.</p>
@@ -254,10 +291,11 @@ function Pricing() {
 }
 
 function Blocks() {
-  const s = useStore();
+  const s = useAdmin();
   const today = todayISO();
   const [f, setF] = useState({ start: addDays(today, 14), end: addDays(today, 16), reason: "" });
-  const add = () => { if (f.end <= f.start) return; update((st: State) => ({ ...st, blocks: [...st.blocks, { id: uid(), start: f.start, end: f.end, reason: f.reason.trim() || "—" }] })); setF({ ...f, reason: "" }); };
+  const addFn = useServerFn(adminAddBlock); const rmFn = useServerFn(adminRemoveBlock);
+  const add = async () => { if (f.end <= f.start) return; await addFn({ data: { start: f.start, end: f.end, reason: f.reason } }); await s.reload(); setF({ ...f, reason: "" }); };
   return (
     <div className="space-y-4">
       <div className="panel p-5 grid sm:grid-cols-2 gap-3">
@@ -269,7 +307,7 @@ function Blocks() {
       {s.blocks.map((b) => (
         <div key={b.id} className="panel p-4 flex justify-between items-center text-sm gap-3">
           <div><p>{fd(b.start)} → {fd(b.end)}</p><p className="text-xs text-muted-foreground">{b.reason}</p></div>
-          <button className="text-xs text-destructive" onClick={() => update((st) => ({ ...st, blocks: st.blocks.filter((x) => x.id !== b.id) }))}>Unblock</button>
+          <button className="text-xs text-destructive" onClick={async () => { await rmFn({ data: { id: b.id } }); await s.reload(); }}>Unblock</button>
         </div>
       ))}
     </div>
@@ -319,7 +357,7 @@ function Notifications() {
 }
 
 function Emails() {
-  const s = useStore();
+  const s = { ...useStore(), ...useAdmin() };
   const b = s.bookings.find((x) => x.status === "confirmed" && x.checkIn >= todayISO()) ?? s.bookings[0];
   const [which, setWhich] = useState(0);
   if (!b) return null;
