@@ -165,7 +165,7 @@ export const createCheckout = createServerFn({ method: "POST" })
     try {
       const session = await stripeCreateCheckoutSession({
         mode: "payment",
-        success_url: `${origin}/book/success?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${origin}/book-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/book?cancelled=1`,
         "line_items[0][quantity]": "1",
         "line_items[0][price_data][currency]": "eur",
