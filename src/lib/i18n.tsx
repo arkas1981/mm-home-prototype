@@ -59,7 +59,7 @@ const el = {
     adult: "Ο κύριος επισκέπτης είναι 18 ετών και άνω.", id: "Κατά το προσωπικό check-in θα ζητηθεί ταυτότητα ή διαβατήριο.",
     terms: "Έχω διαβάσει και αποδέχομαι τους Όρους Κράτησης & Διαμονής και την Πολιτική Ακύρωσης του MM Home.", nrAck: "Αναγνωρίζω ότι επέλεξα τη μη επιστρέψιμη τιμή με έκπτωση 10% και δεν δικαιούμαι επιστροφή σε ακύρωση.",
     invalid: "Συμπληρώστε σωστά όλα τα πεδία και αποδεχτείτε τους όρους.",
-    payT: "Demo πληρωμή", payNote: "Πρωτότυπο: δεν γίνεται πραγματική χρέωση και δεν συλλέγονται στοιχεία κάρτας.", pay: "Ολοκλήρωση demo πληρωμής",
+    payT: "Ασφαλής πληρωμή με κάρτα", payNote: "Θα μεταφερθείτε στη σελίδα ασφαλούς πληρωμής της Stripe (δοκιμαστική λειτουργία — καμία πραγματική χρέωση). Το MM Home δεν αποθηκεύει στοιχεία κάρτας.", pay: "Πληρωμή",
     doneT: "Η κράτησή σας επιβεβαιώθηκε", code: "Κωδικός κράτησης", doneNote: "Προσωπικό check-in από τις 15:00 — θα σας υποδεχτούμε εμείς. Φέρτε ταυτότητα ή διαβατήριο.", manage: "Διαχείριση κράτησης",
   },
   my: {
@@ -129,7 +129,7 @@ const en: Dict = {
     adult: "The main guest is 18 years or older.", id: "An ID card or passport will be requested at personal check-in.",
     terms: "I have read and accept the Booking & Stay Terms and Cancellation Policy of MM Home.", nrAck: "I acknowledge the 10% discounted non-refundable rate and that cancellation receives no refund.",
     invalid: "Please complete all fields correctly and accept the terms.",
-    payT: "Demo payment", payNote: "Prototype: no real charge is made and no card details are collected.", pay: "Complete demo payment",
+    payT: "Secure card payment", payNote: "You will be taken to Stripe's secure payment page (test mode — no real charge). MM Home never stores card details.", pay: "Pay",
     doneT: "Your booking is confirmed", code: "Booking code", doneNote: "Personal check-in from 15:00 — we will welcome you in person. Please bring an ID card or passport.", manage: "Manage booking",
   },
   my: {

@@ -3,10 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
 import { fmtDate, useT } from "@/lib/i18n";
 import { meta } from "@/lib/meta";
-import { todayISO, uid, update, useStore } from "@/lib/store";
+import { todayISO } from "@/lib/store";
+import { useAvailability } from "@/lib/cloud-data";
+import { createCheckout } from "@/lib/cloud.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { MonthCalendar } from "@/components/MonthCalendar";
 import { PageTitle } from "@/components/site";
-import { diffDays, genCode, LEAD_DAYS, MAX_GUESTS, minNightsFor, nightTaken, nightsOf, quote, validateStay, type Booking, type RateType } from "@/lib/booking";
+import { diffDays, LEAD_DAYS, MAX_GUESTS, minNightsFor, nightTaken, nightsOf, quote, validateStay, type RateType } from "@/lib/booking";
 
 export const Route = createFileRoute("/book")({
   head: () => meta("Κράτηση — MM Home Τρίκαλα", "Κάντε απευθείας κράτηση στο MM Home. Ενιαία τιμή για 1–6 επισκέπτες, χωρίς κρυφές χρεώσεις."),
@@ -21,7 +24,10 @@ const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Book() {
   const { t, lang } = useT();
-  const s = useStore();
+  const { data: avail } = useAvailability();
+  const s = { settings: { climateFee: 0 }, ...(avail ?? { bookings: [], blocks: [], overrides: [] }) };
+  const checkout = useServerFn(createCheckout);
+  const [paying, setPaying] = useState(false);
   const today = todayISO();
   useEffect(() => { trackFunnel("availability_opened"); }, []);
   const [step, setStep] = useState(0);
@@ -30,7 +36,6 @@ function Book() {
   const [rate, setRate] = useState<RateType>("flexible");
   const [f, setF] = useState({ name: "", email: "", phone: "", guests: 2, adult: false, terms: false, nrAck: false });
   const [err, setErr] = useState("");
-  const [done, setDone] = useState<Booking | null>(null);
   const [off, setOff] = useState(0);
 
   const base = new Date(); base.setDate(1); base.setMonth(base.getMonth() + off);
@@ -60,11 +65,19 @@ function Book() {
 
   const detailsOk = f.name.trim().length > 1 && emailRe.test(f.email.trim()) && f.phone.replace(/\D/g, "").length >= 8 && acceptanceValid(rate, f.adult, f.terms, f.nrAck);
 
-  const pay = () => {
-    if (!detailsOk || !ci || !co || !q || validateStay(ci, co, today, s.bookings, s.blocks, s.overrides)) return;
-    const b: Booking = { id: uid(), code: genCode(), checkIn: ci, checkOut: co, guests: f.guests, name: f.name.trim(), email: f.email.trim().toLowerCase(), phone: f.phone.trim(), rate, total: q.total, status: "confirmed", createdAt: today, source: "web" };
-    update((st) => ({ ...st, bookings: [...st.bookings, b] }));
-    trackFunnel("booking_completed"); setDone(b); setStep(4);
+  const pay = async () => {
+    if (!detailsOk || !ci || !co || !q || validateStay(ci, co, today, s.bookings, s.blocks, s.overrides) || paying) return;
+    setPaying(true); setErr("");
+    try {
+      // Server re-validates dates, availability and price; booking is confirmed only after Stripe verifies payment.
+      const r = await checkout({ data: { checkIn: ci, checkOut: co, guests: f.guests, name: f.name, email: f.email, phone: f.phone, rate } });
+      if ("url" in r && r.url) { window.location.href = r.url; return; }
+      const e = "error" in r ? r.error : "invalid";
+      setErr(e === "invalid" ? t.book.invalid : t.book.errors[e as "order" | "lead" | "min" | "taken"].replace("{n}", String(minNightsFor(ci, s.overrides))));
+    } catch {
+      setErr(lang === "el" ? "Η πληρωμή δεν είναι διαθέσιμη αυτή τη στιγμή. Δοκιμάστε ξανά." : "Payment is unavailable right now. Please try again.");
+    }
+    setPaying(false);
   };
 
   const Summary = () => ci && co && q ? (
@@ -169,25 +182,14 @@ function Book() {
               <p className="font-serif text-3xl">{t.book.payT}</p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">{t.book.payNote}</p>
               <DepositNotice />
-               <button className="btn-gold" onClick={pay}>{t.book.pay} · €{q?.total}</button>
+               <button className="btn-gold" disabled={paying} onClick={pay}>{t.book.pay} · €{q?.total}</button>
+               {err && <p className="text-sm text-destructive">{err}</p>}
+               {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("cancelled") && <p className="text-xs text-muted-foreground">{lang === "el" ? "Η προηγούμενη πληρωμή ακυρώθηκε — δεν έγινε χρέωση." : "The previous payment was cancelled — no charge was made."}</p>}
             </div>
             <div className="space-y-4"><Summary /><button className="btn-line" onClick={() => setStep(2)}>{t.common.back}</button></div>
           </div>
         )}
 
-        {step === 4 && done && (
-          <div className="panel p-10 text-center max-w-2xl mx-auto fade-up">
-            <p className="eyebrow">MM Home</p>
-            <h2 className="text-4xl mt-2">{t.book.doneT}</h2>
-            <p className="mt-6 text-sm text-muted-foreground">{t.book.code}</p>
-            <p className="font-serif text-4xl tracking-widest text-primary">{done.code}</p>
-            <p className="mt-6">{fmtDate(done.checkIn, lang)} → {fmtDate(done.checkOut, lang)} · {done.guests} {t.common.guests} · €{done.total}</p>
-            <p className="mt-6 text-muted-foreground">{t.book.doneNote}</p>
-            <div className="mt-6 text-left"><DepositNotice /></div>
-             <p className="mt-4 text-sm text-muted-foreground">{lang === "el" ? "Θα λάβετε άλλο μήνυμα 2 ημέρες πριν την άφιξη (προεπισκόπηση επίδειξης, χωρίς αποστολή)." : "Another message is scheduled 2 days before arrival (demo preview, no sending)."}</p>
-             <Link to="/my-booking" className="btn-line mt-8">{t.book.manage}</Link>
-          </div>
-        )}
       </div>
     </>
   );
