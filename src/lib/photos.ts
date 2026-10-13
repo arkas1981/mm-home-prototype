@@ -1,5 +1,6 @@
 // Official MM Home property photos. Each slot is independently replaceable (swap the file or the import).
-import living1 from "@/assets/room-living-1.jpg";
+import livingPrimary from "@/assets/living-primary.png.asset.json"; // approved Oct 2026 primary/hero image
+const living1 = livingPrimary.url;
 import living2 from "@/assets/room-living-2.jpg";
 import master1 from "@/assets/room-master-1.jpg";
 import master2 from "@/assets/room-master-2.jpg";
@@ -17,7 +18,7 @@ import wc from "@/assets/room-wc-laundry.jpg";
 import front from "@/assets/room-front-balcony.jpg";
 import rear from "@/assets/room-rear-balcony.jpg";
 
-export const photos = { living: living1, bedroom: master1, balcony: front, kitchen };
+export const photos = { living: living1, bedroom: master1, balcony: front, kitchen, dining };
 
 export const roomPhotos = {
   living: [{ id: "living-primary", src: living1 }, { id: "living-detail-1", src: living2 }],

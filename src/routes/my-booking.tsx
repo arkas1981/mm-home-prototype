@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { fmtDate, useT } from "@/lib/i18n";
 import { meta } from "@/lib/meta";
-import { todayISO, update, useStore } from "@/lib/store";
+import { todayISO, useStore } from "@/lib/store";
+import { useServerFn } from "@tanstack/react-start";
+import { cancelBooking, lookupBooking } from "@/lib/cloud.functions";
 import { PageTitle } from "@/components/site";
 import { DepositNotice } from "@/components/DepositNotice";
 import { diffDays, refundFor } from "@/lib/booking";
@@ -14,19 +16,22 @@ export const Route = createFileRoute("/my-booking")({
 
 function MyBooking() {
   const { t, lang } = useT();
-  const { bookings, settings } = useStore();
+  const { settings } = useStore();
+  const lookup = useServerFn(lookupBooking); const cancelFn = useServerFn(cancelBooking);
   const [email, setEmail] = useState(""); const [code, setCode] = useState("");
-  const [id, setId] = useState<string | null>(null); const [nf, setNf] = useState(false); const [confirming, setConfirming] = useState(false);
-  const b = bookings.find((x) => x.id === id);
-  const find = () => {
-    const hit = bookings.find((x) => x.email.toLowerCase() === email.trim().toLowerCase() && x.code.toUpperCase() === code.trim().toUpperCase());
-    setId(hit?.id ?? null); setNf(!hit); setConfirming(false);
+  type B = { checkIn: string; checkOut: string; code: string; guests: number; rate: "flexible" | "nonref"; total: number; status: "confirmed" | "cancelled"; refund?: number };
+  const [b, setB] = useState<B | null>(null); const [nf, setNf] = useState(false); const [confirming, setConfirming] = useState(false);
+  const find = async () => {
+    const { booking: x } = await lookup({ data: { email, code } }).catch(() => ({ booking: null }));
+    const hit = x && x.status !== "pending" ? { checkIn: x.check_in, checkOut: x.check_out, code: x.code, guests: x.guests, rate: x.rate as B["rate"], total: x.total, status: (x.status === "confirmed" ? "confirmed" : "cancelled") as B["status"], ...(x.refund != null ? { refund: x.refund } : {}) } : null;
+    setB(hit); setNf(!hit); setConfirming(false);
   };
   const today = todayISO();
   const r = b ? refundFor(b, today) : null;
-  const cancel = () => {
+  const cancel = async () => {
     if (!b || !r) return;
-    update((s) => ({ ...s, bookings: s.bookings.map((x) => (x.id === b.id ? { ...x, status: "cancelled", refund: r.amount } : x)) }));
+    const res = await cancelFn({ data: { email, code } }).catch(() => null);
+    if (res && "refund" in res) setB({ ...b, status: "cancelled", refund: res.refund });
     setConfirming(false);
   };
   const Row = ({ k, v }: { k: string; v: React.ReactNode }) => <div className="flex justify-between py-2 border-b gap-4"><span className="text-muted-foreground">{k}</span><span className="text-right">{v}</span></div>;

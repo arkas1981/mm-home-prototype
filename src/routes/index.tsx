@@ -30,15 +30,16 @@ function Home() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-7xl px-5 pt-6 md:pt-10 grid md:grid-cols-3 gap-4">
+        {[{ src: photos.kitchen, alt: t.stay.kitchenT }, { src: photos.dining, alt: t.stay.diningT }, { src: photos.balcony, alt: t.stay.frontT }].map((p) => (
+          <img key={p.alt} src={p.src} alt={p.alt} loading="lazy" width={1408} height={1008} className="rounded-2xl w-full h-[300px] md:h-[360px] object-cover" />
+        ))}
+      </section>
+
       <section className="mx-auto max-w-5xl px-5 py-12 md:py-20 text-center">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-y-6 text-sm tracking-wide text-muted-foreground">
           {t.home.facts.map((f) => <div key={f} className="border-l first:border-l-0 md:px-2">{f}</div>)}
         </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 grid md:grid-cols-2 gap-4">
-        <img src={photos.bedroom} alt="" loading="lazy" width={1408} height={1008} className="rounded-2xl w-full h-[420px] object-cover" />
-        <img src={photos.kitchen} alt="" loading="lazy" width={1408} height={1008} className="rounded-2xl w-full h-[420px] object-cover" />
       </section>
 
       <section className="mx-auto max-w-7xl px-5 py-24 grid md:grid-cols-2 gap-12 items-center">

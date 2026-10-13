@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AmenitiesRouteImport } from './routes/amenities'
 import { Route as BookRouteImport } from './routes/book'
+import { Route as BookSuccessRouteImport } from './routes/book-success'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as LocationRouteImport } from './routes/location'
 import { Route as MyBookingRouteImport } from './routes/my-booking'
@@ -40,6 +41,11 @@ const AmenitiesRoute = AmenitiesRouteImport.update({
 const BookRoute = BookRouteImport.update({
   id: '/book',
   path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookSuccessRoute = BookSuccessRouteImport.update({
+  id: '/book-success',
+  path: '/book-success',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CookiesRoute = CookiesRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/amenities': typeof AmenitiesRoute
   '/book': typeof BookRoute
+  '/book-success': typeof BookSuccessRoute
   '/cookies': typeof CookiesRoute
   '/location': typeof LocationRoute
   '/my-booking': typeof MyBookingRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/amenities': typeof AmenitiesRoute
   '/book': typeof BookRoute
+  '/book-success': typeof BookSuccessRoute
   '/cookies': typeof CookiesRoute
   '/location': typeof LocationRoute
   '/my-booking': typeof MyBookingRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/amenities': typeof AmenitiesRoute
   '/book': typeof BookRoute
+  '/book-success': typeof BookSuccessRoute
   '/cookies': typeof CookiesRoute
   '/location': typeof LocationRoute
   '/my-booking': typeof MyBookingRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/amenities'
     | '/book'
+    | '/book-success'
     | '/cookies'
     | '/location'
     | '/my-booking'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/amenities'
     | '/book'
+    | '/book-success'
     | '/cookies'
     | '/location'
     | '/my-booking'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/amenities'
     | '/book'
+    | '/book-success'
     | '/cookies'
     | '/location'
     | '/my-booking'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AmenitiesRoute: typeof AmenitiesRoute
   BookRoute: typeof BookRoute
+  BookSuccessRoute: typeof BookSuccessRoute
   CookiesRoute: typeof CookiesRoute
   LocationRoute: typeof LocationRoute
   MyBookingRoute: typeof MyBookingRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/book'
       fullPath: '/book'
       preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/book-success': {
+      id: '/book-success'
+      path: '/book-success'
+      fullPath: '/book-success'
+      preLoaderRoute: typeof BookSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cookies': {
@@ -280,6 +300,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AmenitiesRoute: AmenitiesRoute,
   BookRoute: BookRoute,
+  BookSuccessRoute: BookSuccessRoute,
   CookiesRoute: CookiesRoute,
   LocationRoute: LocationRoute,
   MyBookingRoute: MyBookingRoute,
