@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
 import { fmtDate, useT } from "@/lib/i18n";
 import { meta } from "@/lib/meta";
-import { todayISO } from "@/lib/store";
+import { todayISO, useStore } from "@/lib/store";
 import { useAvailability } from "@/lib/cloud-data";
 import { createCheckout } from "@/lib/cloud.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -25,7 +25,8 @@ const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function Book() {
   const { t, lang } = useT();
   const { data: avail } = useAvailability();
-  const s = { settings: { climateFee: 0 }, ...(avail ?? { bookings: [], blocks: [], overrides: [] }) };
+  const { settings } = useStore();
+  const s = { settings, ...(avail ?? { bookings: [], blocks: [], overrides: [] }) };
   const checkout = useServerFn(createCheckout);
   const [paying, setPaying] = useState(false);
   const today = todayISO();
@@ -184,7 +185,6 @@ function Book() {
               <DepositNotice />
                <button className="btn-gold" disabled={paying} onClick={pay}>{t.book.pay} · €{q?.total}</button>
                {err && <p className="text-sm text-destructive">{err}</p>}
-               {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("cancelled") && <p className="text-xs text-muted-foreground">{lang === "el" ? "Η προηγούμενη πληρωμή ακυρώθηκε — δεν έγινε χρέωση." : "The previous payment was cancelled — no charge was made."}</p>}
             </div>
             <div className="space-y-4"><Summary /><button className="btn-line" onClick={() => setStep(2)}>{t.common.back}</button></div>
           </div>
