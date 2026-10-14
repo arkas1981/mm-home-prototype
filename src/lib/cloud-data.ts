@@ -1,6 +1,6 @@
 // Maps Cloud rows to the UI's existing Booking/Block/Override shapes so calendar/pricing helpers keep working.
 import { useCallback, useEffect, useState } from "react";
-import { getAvailability, type Availability } from "./cloud.functions";
+import { getAvailability, type Availability } from "./availability.functions";
 import type { Block, Booking, Override, RateType } from "./booking";
 
 export type BookingRow = {
