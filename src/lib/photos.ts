@@ -1,6 +1,5 @@
 // Official MM Home property photos. Each slot is independently replaceable (swap the file or the import).
-import livingPrimary from "@/assets/living-primary.png.asset.json"; // approved Oct 2026 primary/hero image
-const living1 = livingPrimary.url;
+import living1 from "@/assets/living-primary.png";
 import living2 from "@/assets/room-living-2.jpg";
 import master1 from "@/assets/room-master-1.jpg";
 import master2 from "@/assets/room-master-2.jpg";
