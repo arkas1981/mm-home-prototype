@@ -17,14 +17,20 @@ export interface D1Database {
   };
 }
 
+type CloudflareEnv = {
+  DB?: D1Database;
+};
+
 export function getDB(): D1Database {
-  const db = (
-    process.env as unknown as { DB?: D1Database }
-  ).DB;
+  const env = globalThis.__CLOUDFLARE_ENV__ as
+    | CloudflareEnv
+    | undefined;
+
+  const db = env?.DB;
 
   if (!db) {
     throw new Error(
-      "Cloudflare D1 binding DB is not available in this request."
+      "Cloudflare D1 binding DB is not available."
     );
   }
 
