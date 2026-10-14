@@ -32,6 +32,11 @@ export function useAvailability() {
       overrides: a.overrides.map((o, i) => ({ id: `o${i}`, start: o.start_date, end: o.end_date, ...(o.price != null ? { price: o.price } : {}), ...(o.min_nights != null ? { minNights: o.min_nights } : {}) })),
     });
   }, []);
-  useEffect(() => { load().catch(() => setData({ bookings: [], blocks: [], overrides: [] })); }, [load]);
+useEffect(() => {
+  load().catch((error) => {
+    console.error("D1 availability error:", error);
+    throw error;
+  });
+}, [load]);
   return { data, reload: load };
 }
