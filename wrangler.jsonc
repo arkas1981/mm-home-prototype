@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mm-home-prototype",
+  "compatibility_date": "2026-10-14",
+  "main": ".output/server/index.mjs",
+  "assets": {
+    "directory": ".output/public"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mmhome-db",
+      "database_id": "d743281c-a135-475c-9942-97edcfe522c1"
+    }
+  ]
+}
