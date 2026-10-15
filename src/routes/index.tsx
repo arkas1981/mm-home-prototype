@@ -2,61 +2,123 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SLOGAN, useT } from "@/lib/i18n";
 import { photos } from "@/lib/photos";
 import { meta } from "@/lib/meta";
-import { BASE_RATE } from "@/lib/booking";
 
 export const Route = createFileRoute("/")({
-  head: () => meta("MM Home Τρίκαλα — Your Home Away From Home", "Πολυτελές, ανακαινισμένο διαμέρισμα 94 m² στο κέντρο των Τρικάλων για έως 6 επισκέπτες. Απευθείας κράτηση."),
+  head: () =>
+    meta(
+      "MM Home Τρίκαλα — Your Home Away From Home",
+      "Πολυτελές, ανακαινισμένο διαμέρισμα 94 m² στο κέντρο των Τρικάλων για έως 6 επισκέπτες."
+    ),
   component: Home,
 });
 
 function Home() {
   const { t } = useT();
+
   return (
     <>
       <section className="relative min-h-[620px] md:min-h-[660px] h-[78svh] overflow-hidden">
-        <img src={photos.living} alt="MM Home" width={1600} height={1008} className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={photos.living}
+          alt="MM Home"
+          width={1600}
+          height={1008}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+
         <div className="absolute inset-0 bg-foreground/30" />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/40 to-transparent" />
+
         <div className="relative z-10 mx-auto max-w-7xl h-full px-5 flex flex-col justify-end pb-10 md:pb-16 text-background fade-up">
           <p className="font-serif text-3xl">MM Home</p>
-          <h1 className="mt-4 text-4xl md:text-6xl max-w-4xl leading-[1.08]">{t.home.headline}</h1>
-          <p className="mt-4 text-base md:text-lg max-w-xl">{t.home.supporting}</p>
-          <p className="mt-4 text-sm md:text-base">{t.home.heroFacts}</p>
-          <p className="mt-3 font-serif italic text-xl">{SLOGAN}</p>
+
+          <h1 className="mt-4 text-4xl md:text-6xl max-w-4xl leading-[1.08]">
+            {t.home.headline}
+          </h1>
+
+          <p className="mt-4 text-base md:text-lg max-w-xl">
+            {t.home.supporting}
+          </p>
+
+          <p className="mt-4 text-sm md:text-base">
+            {t.home.heroFacts}
+          </p>
+
+          <p className="mt-3 font-serif italic text-xl">
+            {SLOGAN}
+          </p>
+
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/book" className="btn-gold">{t.common.bookNow}</Link>
-            <Link to="/stay" className="btn-line !border-background !text-background hover:!bg-background hover:!text-foreground">{t.home.explore}</Link>
+            <Link to="/book" className="btn-gold">
+              {t.common.bookNow}
+            </Link>
+
+            <Link
+              to="/stay"
+              className="btn-line !border-background !text-background hover:!bg-background hover:!text-foreground"
+            >
+              {t.home.explore}
+            </Link>
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-5 pt-6 md:pt-10 grid md:grid-cols-3 gap-4">
-        {[{ src: photos.kitchen, alt: t.stay.kitchenT }, { src: photos.dining, alt: t.stay.diningT }, { src: photos.balcony, alt: t.stay.frontT }].map((p) => (
-          <img key={p.alt} src={p.src} alt={p.alt} loading="lazy" width={1408} height={1008} className="rounded-2xl w-full h-[300px] md:h-[360px] object-cover" />
+        {[
+          { src: photos.kitchen, alt: t.stay.kitchenT },
+          { src: photos.dining, alt: t.stay.diningT },
+          { src: photos.balcony, alt: t.stay.frontT },
+        ].map((p) => (
+          <img
+            key={p.alt}
+            src={p.src}
+            alt={p.alt}
+            loading="lazy"
+            width={1408}
+            height={1008}
+            className="rounded-2xl w-full h-[300px] md:h-[360px] object-cover"
+          />
         ))}
       </section>
 
       <section className="mx-auto max-w-5xl px-5 py-12 md:py-20 text-center">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-y-6 text-sm tracking-wide text-muted-foreground">
-          {t.home.facts.map((f) => <div key={f} className="border-l first:border-l-0 md:px-2">{f}</div>)}
+          {t.home.facts.map((f) => (
+            <div
+              key={f}
+              className="border-l first:border-l-0 md:px-2"
+            >
+              {f}
+            </div>
+          ))}
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-5 py-24 grid md:grid-cols-2 gap-12 items-center">
         <div>
           <p className="eyebrow">{t.nav.location}</p>
-          <h2 className="mt-3 text-4xl md:text-5xl">{t.home.walkTitle}</h2>
-          <p className="mt-5 text-muted-foreground leading-relaxed">{t.home.walk}</p>
-          <Link to="/location" className="btn-line mt-8">{t.nav.location}</Link>
-        </div>
-        <img src={photos.balcony} alt="" loading="lazy" width={1408} height={1008} className="rounded-2xl w-full h-[460px] object-cover" />
-      </section>
 
-      <section className="mx-auto max-w-3xl px-5 text-center border-t py-14">
-        <p className="eyebrow">{t.common.from}</p>
-        <p className="font-serif text-5xl mt-2">€{BASE_RATE} <span className="text-xl text-muted-foreground">{t.common.perNight}</span></p>
-        <p className="mt-4 text-muted-foreground">{t.home.priceNote}</p>
-        <Link to="/book" className="btn-gold mt-8">{t.common.bookNow}</Link>
+          <h2 className="mt-3 text-4xl md:text-5xl">
+            {t.home.walkTitle}
+          </h2>
+
+          <p className="mt-5 text-muted-foreground leading-relaxed">
+            {t.home.walk}
+          </p>
+
+          <Link to="/location" className="btn-line mt-8">
+            {t.nav.location}
+          </Link>
+        </div>
+
+        <img
+          src={photos.balcony}
+          alt=""
+          loading="lazy"
+          width={1408}
+          height={1008}
+          className="rounded-2xl w-full h-[460px] object-cover"
+        />
       </section>
     </>
   );
