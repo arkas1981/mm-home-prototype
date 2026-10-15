@@ -112,8 +112,8 @@ function Home() {
         </div>
 
         <img
-          src={photos.balcony}
-          alt=""
+          src="/τρικαλα.jpg"
+          alt="Κέντρο Τρικάλων"
           loading="lazy"
           width={1408}
           height={1008}
