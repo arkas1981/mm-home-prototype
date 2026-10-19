@@ -16,6 +16,19 @@ export const adminSession =
     };
   });
 
+export const adminAuthDiagnostic =
+  createServerFn({
+    method: "GET",
+  }).handler(async () => {
+    const {
+      adminEnvironmentStatus,
+    } = await import(
+      "./admin-auth.server"
+    );
+
+    return adminEnvironmentStatus();
+  });
+
 export const adminLogin =
   createServerFn({
     method: "POST",
