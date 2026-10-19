@@ -1,9 +1,11 @@
-import { createServerFn } from "@tanstack/react-start";
+import "@tanstack/react-start/server-only";
+
 import {
   deleteCookie,
   getCookie,
   setCookie,
 } from "@tanstack/react-start/server";
+
 import { cloudflareRequestEnv } from "../server";
 
 const COOKIE_NAME = "__Host-mmhome-admin";
@@ -39,9 +41,7 @@ function base64UrlToBytes(value: string) {
 
   const padded =
     normal +
-    "=".repeat(
-      (4 - (normal.length % 4)) % 4
-    );
+    "=".repeat((4 - (normal.length % 4)) % 4);
 
   const binary = atob(padded);
 
@@ -95,9 +95,7 @@ async function createSessionToken() {
     await crypto.subtle.sign(
       "HMAC",
       key,
-      new TextEncoder().encode(
-        payloadEncoded
-      )
+      new TextEncoder().encode(payloadEncoded)
     );
 
   return `${payloadEncoded}.${bytesToBase64Url(
@@ -122,10 +120,7 @@ async function verifySessionToken(
   const [payloadEncoded, signatureEncoded] =
     token.split(".");
 
-  if (
-    !payloadEncoded ||
-    !signatureEncoded
-  ) {
+  if (!payloadEncoded || !signatureEncoded) {
     return false;
   }
 
@@ -138,21 +133,15 @@ async function verifySessionToken(
       await crypto.subtle.verify(
         "HMAC",
         key,
-        base64UrlToBytes(
-          signatureEncoded
-        ),
-        new TextEncoder().encode(
-          payloadEncoded
-        )
+        base64UrlToBytes(signatureEncoded),
+        new TextEncoder().encode(payloadEncoded)
       );
 
     if (!valid) return false;
 
     const payload = JSON.parse(
       new TextDecoder().decode(
-        base64UrlToBytes(
-          payloadEncoded
-        )
+        base64UrlToBytes(payloadEncoded)
       )
     ) as {
       role?: string;
@@ -170,100 +159,54 @@ async function verifySessionToken(
   }
 }
 
-export async function requireAdminSession() {
+export async function isAdminAuthenticated() {
   const token = getCookie(COOKIE_NAME);
 
-  const valid =
-    await verifySessionToken(token);
+  return verifySessionToken(token);
+}
 
-  if (!valid) {
+export async function requireAdminSession() {
+  if (!(await isAdminAuthenticated())) {
     throw new Error("Unauthorized");
   }
 }
 
-export const adminSession =
-  createServerFn({
-    method: "GET",
-  }).handler(async () => {
-    const token =
-      getCookie(COOKIE_NAME);
+export async function loginAdmin(
+  email: string,
+  password: string
+) {
+  const {
+    ADMIN_EMAIL,
+    ADMIN_PASSWORD,
+  } = getAdminEnv();
 
-    return {
-      authenticated:
-        await verifySessionToken(token),
-    };
+  if (
+    !ADMIN_EMAIL ||
+    !ADMIN_PASSWORD ||
+    email.trim().toLowerCase() !==
+      ADMIN_EMAIL.trim().toLowerCase() ||
+    password !== ADMIN_PASSWORD
+  ) {
+    return false;
+  }
+
+  const token = await createSessionToken();
+
+  setCookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+    maxAge: SESSION_SECONDS,
   });
 
-export const adminLogin =
-  createServerFn({
-    method: "POST",
-  })
-    .inputValidator(
-      (d: {
-        email: string;
-        password: string;
-      }) => d
-    )
-    .handler(async ({ data }) => {
-      const {
-        ADMIN_EMAIL,
-        ADMIN_PASSWORD,
-      } = getAdminEnv();
+  return true;
+}
 
-      const email =
-        data.email
-          .trim()
-          .toLowerCase();
-
-      if (
-        !ADMIN_EMAIL ||
-        !ADMIN_PASSWORD ||
-        email !==
-          ADMIN_EMAIL
-            .trim()
-            .toLowerCase() ||
-        data.password !== ADMIN_PASSWORD
-      ) {
-        return {
-          ok: false as const,
-        };
-      }
-
-      const token =
-        await createSessionToken();
-
-      setCookie(
-        COOKIE_NAME,
-        token,
-        {
-          httpOnly: true,
-          secure: true,
-          sameSite: "strict",
-          path: "/",
-          maxAge:
-            SESSION_SECONDS,
-        }
-      );
-
-      return {
-        ok: true as const,
-      };
-    });
-
-export const adminLogout =
-  createServerFn({
-    method: "POST",
-  }).handler(async () => {
-    deleteCookie(
-      COOKIE_NAME,
-      {
-        secure: true,
-        sameSite: "strict",
-        path: "/",
-      }
-    );
-
-    return {
-      ok: true as const,
-    };
+export function logoutAdmin() {
+  deleteCookie(COOKIE_NAME, {
+    secure: true,
+    sameSite: "strict",
+    path: "/",
   });
+}
