@@ -1,54 +1,140 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { meta } from "@/lib/meta";
 import { PageTitle } from "@/components/site";
-import { SLOGAN } from "@/lib/i18n";
+import { MonthCalendar } from "@/components/MonthCalendar";
+import { useAvailability } from "@/lib/cloud-data";
+import { nightTaken } from "@/lib/booking";
 
 export const Route = createFileRoute("/book")({
   head: () =>
     meta(
       "Κράτηση — MM Home Τρίκαλα",
-      "Οι online κρατήσεις του MM Home ανοίγουν σύντομα."
+      "Διαθεσιμότητα και online κρατήσεις στο MM Home."
     ),
-  component: BookComingSoon,
+  component: BookingCalendarPreview,
 });
 
-function BookComingSoon() {
-  const { lang } = useT();
+function BookingCalendarPreview() {
+  const { lang, t } = useT();
+  const { data } = useAvailability();
+  const [off, setOff] = useState(0);
 
-  const isGreek = lang === "el";
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + off);
+
+  const second = new Date(base);
+  second.setMonth(second.getMonth() + 1);
+
+  const bookings = data?.bookings ?? [];
+  const blocks = data?.blocks ?? [];
+
+  const info = (iso: string) => {
+    const status = nightTaken(iso, bookings, blocks);
+
+    if (status) {
+      return {
+        disabled: true,
+        className:
+          "bg-muted text-muted-foreground line-through cursor-not-allowed",
+        title:
+          lang === "el"
+            ? "Μη διαθέσιμο"
+            : "Unavailable",
+      };
+    }
+
+    return {
+      disabled: false,
+      className: "border bg-card hover:bg-accent",
+      title:
+        lang === "el"
+          ? "Διαθέσιμο"
+          : "Available",
+    };
+  };
 
   return (
     <>
       <PageTitle
-        title={isGreek ? "Κράτηση" : "Booking"}
+        title={lang === "el" ? "Διαθεσιμότητα" : "Availability"}
         sub={
-          isGreek
-            ? "Οι online κρατήσεις ανοίγουν σύντομα."
-            : "Online bookings are opening soon."
+          lang === "el"
+            ? "Δείτε τις διαθέσιμες ημερομηνίες του MM Home."
+            : "View MM Home availability."
         }
       />
 
-      <section className="mx-auto max-w-2xl px-5 pb-24">
-        <div className="panel p-8 md:p-12 text-center">
-          <p className="eyebrow">
-            {isGreek ? "MM Home · Τρίκαλα" : "MM Home · Trikala"}
-          </p>
+      <section className="mx-auto max-w-5xl px-5 pb-24">
+        <div className="panel p-5 md:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm text-muted-foreground">
+              {lang === "el"
+                ? "Οι διαγραμμένες ημερομηνίες δεν είναι διαθέσιμες."
+                : "Crossed-out dates are unavailable."}
+            </p>
 
-          <h2 className="mt-3 font-serif text-3xl md:text-4xl">
-            {isGreek
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={off === 0}
+                onClick={() => setOff(off - 1)}
+                className="p-2 disabled:opacity-30"
+                aria-label="Previous month"
+              >
+                <ChevronLeft />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOff(off + 1)}
+                className="p-2"
+                aria-label="Next month"
+              >
+                <ChevronRight />
+              </button>
+            </div>
+          </div>
+
+          {!data ? (
+            <p className="py-12 text-center text-muted-foreground">
+              {lang === "el"
+                ? "Φόρτωση διαθεσιμότητας..."
+                : "Loading availability..."}
+            </p>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-10">
+              <MonthCalendar
+                year={base.getFullYear()}
+                month={base.getMonth()}
+                locale={t.months}
+                info={info}
+              />
+
+              <MonthCalendar
+                year={second.getFullYear()}
+                month={second.getMonth()}
+                locale={t.months}
+                info={info}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="mt-8 text-center">
+          <h2 className="font-serif text-3xl">
+            {lang === "el"
               ? "Οι online κρατήσεις ανοίγουν σύντομα"
               : "Online bookings are opening soon"}
           </h2>
 
-          <p className="mt-5 text-muted-foreground leading-relaxed">
-            {isGreek
-              ? "Ετοιμάζουμε το νέο σύστημα online κρατήσεων του MM Home. Πολύ σύντομα θα μπορείτε να ελέγχετε διαθεσιμότητα, να επιλέγετε τις ημερομηνίες σας και να ολοκληρώνετε την κράτησή σας απευθείας από εδώ."
-              : "We’re preparing the new MM Home online booking system. Soon you’ll be able to check availability, choose your dates and complete your booking directly here."}
-          </p>
-
-          <p className="mt-8 font-serif italic text-xl">
-            {SLOGAN}
+          <p className="mt-3 text-muted-foreground">
+            {lang === "el"
+              ? "Προς το παρόν το ημερολόγιο εμφανίζει μόνο τη διαθεσιμότητα. Η ολοκλήρωση online κράτησης θα ενεργοποιηθεί σύντομα."
+              : "For now, the calendar displays availability only. Online booking will be enabled soon."}
           </p>
         </div>
       </section>
