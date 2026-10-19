@@ -1,651 +1,269 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getDB } from "./d1.server";
-import { requireAdminSession } from "./admin-auth.functions";
 import {
-  BASE_RATE,
-  NONREF_DISCOUNT,
-  type RateType,
-} from "./booking";
+  deleteCookie,
+  getCookie,
+  setCookie,
+} from "@tanstack/react-start/server";
+import { cloudflareRequestEnv } from "../server";
 
-type BookingRow = {
-  id: string;
-  code: string;
-  check_in: string;
-  check_out: string;
-  guests: number;
-  name: string;
-  email: string;
-  phone: string;
-  rate: string;
-  total: number;
-  status: string;
-  payment_status: string;
-  stripe_session_id: string | null;
-  refund: number | null;
-  source: string;
-  expires_at: string | null;
-  created_at: string;
+const COOKIE_NAME = "__Host-mmhome-admin";
+const SESSION_SECONDS = 60 * 60 * 12;
+
+type AdminEnv = {
+  ADMIN_EMAIL?: string;
+  ADMIN_PASSWORD?: string;
+  ADMIN_SESSION_SECRET?: string;
 };
 
-type BlockRow = {
-  id: string;
-  start_date: string;
-  end_date: string;
-  reason: string;
-  created_at: string;
-};
-
-type OverrideRow = {
-  id: string;
-  start_date: string;
-  end_date: string;
-  price: number | null;
-  min_nights: number | null;
-  label: string;
-  created_at: string;
-};
-
-const addDays = (s: string, n: number) => {
-  const d = new Date(`${s}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-};
-
-const nightsOf = (ci: string, co: string) => {
-  const dates: string[] = [];
-
-  for (let d = ci; d < co; d = addDays(d, 1)) {
-    dates.push(d);
-  }
-
-  return dates;
-};
-
-const genId = () => crypto.randomUUID();
-
-const genCode = () => {
-  const chars =
-    "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-  let code = "MM-";
-
-  for (let i = 0; i < 6; i++) {
-    code +=
-      chars[
-        Math.floor(
-          Math.random() * chars.length
-        )
-      ];
-  }
-
-  return code;
-};
-
-async function loadOverrides() {
-  const db = getDB();
-
-  const result = await db
-    .prepare(`
-      SELECT
-        id,
-        start_date,
-        end_date,
-        price,
-        min_nights,
-        label,
-        created_at
-      FROM price_overrides
-      ORDER BY start_date
-    `)
-    .all<OverrideRow>();
-
-  return result.results ?? [];
+function getAdminEnv(): AdminEnv {
+  return (cloudflareRequestEnv.getStore() ?? {}) as AdminEnv;
 }
 
-function priceForDate(
-  date: string,
-  overrides: OverrideRow[]
-) {
-  const match = [...overrides]
-    .reverse()
-    .find(
-      (o) =>
-        o.price != null &&
-        date >= o.start_date &&
-        date <= o.end_date
+function bytesToBase64Url(bytes: Uint8Array) {
+  let binary = "";
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function base64UrlToBytes(value: string) {
+  const normal = value
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  const padded =
+    normal +
+    "=".repeat(
+      (4 - (normal.length % 4)) % 4
     );
 
-  return match?.price ?? BASE_RATE;
-}
+  const binary = atob(padded);
 
-function quote(
-  ci: string,
-  co: string,
-  rate: RateType,
-  overrides: OverrideRow[]
-) {
-  const prices = nightsOf(ci, co).map(
-    (date) => {
-      const flex = priceForDate(
-        date,
-        overrides
-      );
-
-      return rate === "flexible"
-        ? flex
-        : Math.round(
-            flex * (1 - NONREF_DISCOUNT)
-          );
-    }
-  );
-
-  return prices.reduce(
-    (sum, value) => sum + value,
-    0
+  return Uint8Array.from(
+    binary,
+    (c) => c.charCodeAt(0)
   );
 }
 
-/*
- * MM Home rule:
- *
- * Existing booking:
- * check-in 18/10
- * check-out 20/10
- *
- * New check-in cannot be:
- * 18/10, 19/10 or 20/10
- *
- * Next possible check-in:
- * 21/10
- */
-async function datesTaken(
-  checkIn: string,
-  checkOut: string,
-  ignoreBookingId?: string
-) {
-  const db = getDB();
-  const now = new Date().toISOString();
+async function getHmacKey(secret: string) {
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    {
+      name: "HMAC",
+      hash: "SHA-256",
+    },
+    false,
+    ["sign", "verify"]
+  );
+}
 
-  const booking = await db
-    .prepare(`
-      SELECT id
-      FROM bookings
-      WHERE
-        status IN ('pending', 'confirmed')
-        AND (
-          status = 'confirmed'
-          OR (
-            status = 'pending'
-            AND expires_at IS NOT NULL
-            AND expires_at > ?
-          )
-        )
-        AND check_in <= ?
-        AND check_out >= ?
-        ${ignoreBookingId ? "AND id != ?" : ""}
-      LIMIT 1
-    `)
-    .bind(
-      now,
-      checkOut,
-      checkIn,
-      ...(ignoreBookingId
-        ? [ignoreBookingId]
-        : [])
-    )
-    .first<{ id: string }>();
+async function createSessionToken() {
+  const { ADMIN_SESSION_SECRET } = getAdminEnv();
 
-  if (booking) {
-    return true;
+  if (
+    !ADMIN_SESSION_SECRET ||
+    ADMIN_SESSION_SECRET.length < 32
+  ) {
+    throw new Error(
+      "ADMIN_SESSION_SECRET is missing or too short"
+    );
   }
 
-  const block = await db
-    .prepare(`
-      SELECT id
-      FROM blocks
-      WHERE
-        start_date <= ?
-        AND end_date >= ?
-      LIMIT 1
-    `)
-    .bind(
-      checkOut,
-      checkIn
-    )
-    .first<{ id: string }>();
+  const payload = JSON.stringify({
+    role: "admin",
+    exp:
+      Math.floor(Date.now() / 1000) +
+      SESSION_SECONDS,
+  });
 
-  return !!block;
+  const payloadEncoded = bytesToBase64Url(
+    new TextEncoder().encode(payload)
+  );
+
+  const key = await getHmacKey(
+    ADMIN_SESSION_SECRET
+  );
+
+  const signature =
+    await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(
+        payloadEncoded
+      )
+    );
+
+  return `${payloadEncoded}.${bytesToBase64Url(
+    new Uint8Array(signature)
+  )}`;
 }
 
-/* =========================
-   ADMIN DATA
-   ========================= */
+async function verifySessionToken(
+  token?: string
+) {
+  if (!token) return false;
 
-export const adminDataD1 =
+  const { ADMIN_SESSION_SECRET } = getAdminEnv();
+
+  if (
+    !ADMIN_SESSION_SECRET ||
+    ADMIN_SESSION_SECRET.length < 32
+  ) {
+    return false;
+  }
+
+  const [payloadEncoded, signatureEncoded] =
+    token.split(".");
+
+  if (
+    !payloadEncoded ||
+    !signatureEncoded
+  ) {
+    return false;
+  }
+
+  try {
+    const key = await getHmacKey(
+      ADMIN_SESSION_SECRET
+    );
+
+    const valid =
+      await crypto.subtle.verify(
+        "HMAC",
+        key,
+        base64UrlToBytes(
+          signatureEncoded
+        ),
+        new TextEncoder().encode(
+          payloadEncoded
+        )
+      );
+
+    if (!valid) return false;
+
+    const payload = JSON.parse(
+      new TextDecoder().decode(
+        base64UrlToBytes(
+          payloadEncoded
+        )
+      )
+    ) as {
+      role?: string;
+      exp?: number;
+    };
+
+    return (
+      payload.role === "admin" &&
+      typeof payload.exp === "number" &&
+      payload.exp >
+        Math.floor(Date.now() / 1000)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function requireAdminSession() {
+  const token = getCookie(COOKIE_NAME);
+
+  const valid =
+    await verifySessionToken(token);
+
+  if (!valid) {
+    throw new Error("Unauthorized");
+  }
+}
+
+export const adminSession =
   createServerFn({
     method: "GET",
   }).handler(async () => {
-    await requireAdminSession();
-
-    const db = getDB();
-
-    const bookings = await db
-      .prepare(`
-        SELECT *
-        FROM bookings
-        ORDER BY check_in DESC
-      `)
-      .all<BookingRow>();
-
-    const blocks = await db
-      .prepare(`
-        SELECT *
-        FROM blocks
-        ORDER BY start_date
-      `)
-      .all<BlockRow>();
-
-    const overrides = await db
-      .prepare(`
-        SELECT *
-        FROM price_overrides
-        ORDER BY start_date
-      `)
-      .all<OverrideRow>();
+    const token =
+      getCookie(COOKIE_NAME);
 
     return {
-      bookings:
-        bookings.results ?? [],
-      blocks:
-        blocks.results ?? [],
-      overrides:
-        overrides.results ?? [],
+      authenticated:
+        await verifySessionToken(token),
     };
   });
 
-/* =========================
-   MANUAL BOOKING
-   ========================= */
-
-type ManualBookingInput = {
-  checkIn: string;
-  checkOut: string;
-  guests: number;
-  name: string;
-  email: string;
-  phone: string;
-  rate: RateType;
-};
-
-export const adminCreateBookingD1 =
+export const adminLogin =
   createServerFn({
     method: "POST",
   })
     .inputValidator(
-      (d: ManualBookingInput) => d
+      (d: {
+        email: string;
+        password: string;
+      }) => d
     )
     .handler(async ({ data }) => {
-      await requireAdminSession();
+      const {
+        ADMIN_EMAIL,
+        ADMIN_PASSWORD,
+      } = getAdminEnv();
+
+      const email =
+        data.email
+          .trim()
+          .toLowerCase();
 
       if (
-        !data.checkIn ||
-        !data.checkOut ||
-        data.checkOut <= data.checkIn
+        !ADMIN_EMAIL ||
+        !ADMIN_PASSWORD ||
+        email !==
+          ADMIN_EMAIL
+            .trim()
+            .toLowerCase() ||
+        data.password !== ADMIN_PASSWORD
       ) {
         return {
-          error: "order" as const,
+          ok: false as const,
         };
       }
 
-      if (
-        await datesTaken(
-          data.checkIn,
-          data.checkOut
-        )
-      ) {
-        return {
-          error: "taken" as const,
-        };
-      }
+      const token =
+        await createSessionToken();
 
-      const db = getDB();
-      const overrides =
-        await loadOverrides();
-
-      const total = quote(
-        data.checkIn,
-        data.checkOut,
-        data.rate,
-        overrides
+      setCookie(
+        COOKIE_NAME,
+        token,
+        {
+          httpOnly: true,
+          secure: true,
+          sameSite: "strict",
+          path: "/",
+          maxAge:
+            SESSION_SECONDS,
+        }
       );
 
-      await db
-        .prepare(`
-          INSERT INTO bookings (
-            id,
-            code,
-            check_in,
-            check_out,
-            guests,
-            name,
-            email,
-            phone,
-            rate,
-            total,
-            status,
-            payment_status,
-            source,
-            expires_at
-          )
-          VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-            'confirmed',
-            'paid',
-            'manual',
-            NULL
-          )
-        `)
-        .bind(
-          genId(),
-          genCode(),
-          data.checkIn,
-          data.checkOut,
-          data.guests,
-          data.name.trim(),
-          data.email
-            .trim()
-            .toLowerCase(),
-          data.phone.trim(),
-          data.rate,
-          total
-        )
-        .run();
-
       return {
         ok: true as const,
       };
     });
 
-/* =========================
-   BOOKING STATUS
-   ========================= */
-
-export const adminSetBookingStatusD1 =
+export const adminLogout =
   createServerFn({
     method: "POST",
-  })
-    .inputValidator(
-      (d: {
-        id: string;
-        status:
-          | "confirmed"
-          | "cancelled";
-      }) => d
-    )
-    .handler(async ({ data }) => {
-      await requireAdminSession();
-
-      const db = getDB();
-
-      const booking = await db
-        .prepare(`
-          SELECT
-            id,
-            check_in,
-            check_out
-          FROM bookings
-          WHERE id = ?
-        `)
-        .bind(data.id)
-        .first<{
-          id: string;
-          check_in: string;
-          check_out: string;
-        }>();
-
-      if (!booking) {
-        return {
-          error: "invalid" as const,
-        };
+  }).handler(async () => {
+    deleteCookie(
+      COOKIE_NAME,
+      {
+        secure: true,
+        sameSite: "strict",
+        path: "/",
       }
+    );
 
-      if (
-        data.status === "confirmed"
-      ) {
-        if (
-          await datesTaken(
-            booking.check_in,
-            booking.check_out,
-            booking.id
-          )
-        ) {
-          return {
-            error: "taken" as const,
-          };
-        }
-
-        await db
-          .prepare(`
-            UPDATE bookings
-            SET
-              status = 'confirmed',
-              refund = NULL,
-              expires_at = NULL
-            WHERE id = ?
-          `)
-          .bind(data.id)
-          .run();
-      } else {
-        await db
-          .prepare(`
-            UPDATE bookings
-            SET
-              status = 'cancelled',
-              refund = 0
-            WHERE id = ?
-          `)
-          .bind(data.id)
-          .run();
-      }
-
-      return {
-        ok: true as const,
-      };
-    });
-
-/* =========================
-   BLOCK DATES
-   ========================= */
-
-export const adminAddBlockD1 =
-  createServerFn({
-    method: "POST",
-  })
-    .inputValidator(
-      (d: {
-        start: string;
-        end: string;
-        reason: string;
-      }) => d
-    )
-    .handler(async ({ data }) => {
-      await requireAdminSession();
-
-      if (
-        !data.start ||
-        !data.end ||
-        data.end < data.start
-      ) {
-        return {
-          error: "order" as const,
-        };
-      }
-
-      if (
-        await datesTaken(
-          data.start,
-          data.end
-        )
-      ) {
-        return {
-          error: "taken" as const,
-        };
-      }
-
-      const db = getDB();
-
-      await db
-        .prepare(`
-          INSERT INTO blocks (
-            id,
-            start_date,
-            end_date,
-            reason
-          )
-          VALUES (?, ?, ?, ?)
-        `)
-        .bind(
-          genId(),
-          data.start,
-          data.end,
-          data.reason.trim() ||
-            "Blocked"
-        )
-        .run();
-
-      return {
-        ok: true as const,
-      };
-    });
-
-export const adminRemoveBlockD1 =
-  createServerFn({
-    method: "POST",
-  })
-    .inputValidator(
-      (d: {
-        id: string;
-      }) => d
-    )
-    .handler(async ({ data }) => {
-      await requireAdminSession();
-
-      const db = getDB();
-
-      await db
-        .prepare(`
-          DELETE FROM blocks
-          WHERE id = ?
-        `)
-        .bind(data.id)
-        .run();
-
-      return {
-        ok: true as const,
-      };
-    });
-
-/* =========================
-   PRICE / MIN NIGHTS
-   ========================= */
-
-export const adminAddOverrideD1 =
-  createServerFn({
-    method: "POST",
-  })
-    .inputValidator(
-      (d: {
-        start: string;
-        end: string;
-        price?: number;
-        minNights?: number;
-        label?: string;
-      }) => d
-    )
-    .handler(async ({ data }) => {
-      await requireAdminSession();
-
-      if (
-        !data.start ||
-        !data.end ||
-        data.end < data.start ||
-        (!data.price &&
-          !data.minNights)
-      ) {
-        return {
-          error: "invalid" as const,
-        };
-      }
-
-      const db = getDB();
-
-      await db
-        .prepare(`
-          INSERT INTO price_overrides (
-            id,
-            start_date,
-            end_date,
-            price,
-            min_nights,
-            label
-          )
-          VALUES (?, ?, ?, ?, ?, ?)
-        `)
-        .bind(
-          genId(),
-          data.start,
-          data.end,
-          data.price
-            ? Math.max(
-                1,
-                Math.floor(
-                  data.price
-                )
-              )
-            : null,
-          data.minNights
-            ? Math.max(
-                1,
-                Math.floor(
-                  data.minNights
-                )
-              )
-            : null,
-          (data.label ?? "").slice(
-            0,
-            100
-          )
-        )
-        .run();
-
-      return {
-        ok: true as const,
-      };
-    });
-
-export const adminRemoveOverrideD1 =
-  createServerFn({
-    method: "POST",
-  })
-    .inputValidator(
-      (d: {
-        id: string;
-      }) => d
-    )
-    .handler(async ({ data }) => {
-      await requireAdminSession();
-
-      const db = getDB();
-
-      await db
-        .prepare(`
-          DELETE FROM price_overrides
-          WHERE id = ?
-        `)
-        .bind(data.id)
-        .run();
-
-      return {
-        ok: true as const,
-      };
-    });
+    return {
+      ok: true as const,
+    };
+  });
