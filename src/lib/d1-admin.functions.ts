@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getDB } from "./d1.server";
+
 import {
   BASE_RATE,
   NONREF_DISCOUNT,
@@ -44,16 +45,44 @@ type OverrideRow = {
   created_at: string;
 };
 
-const addDays = (s: string, n: number) => {
-  const d = new Date(`${s}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
+async function requireAdmin() {
+  const {
+    requireAdminSession,
+  } = await import(
+    "./admin-auth.server"
+  );
+
+  await requireAdminSession();
+}
+
+const addDays = (
+  s: string,
+  n: number
+) => {
+  const d = new Date(
+    `${s}T12:00:00Z`
+  );
+
+  d.setUTCDate(
+    d.getUTCDate() + n
+  );
+
+  return d
+    .toISOString()
+    .slice(0, 10);
 };
 
-const nightsOf = (ci: string, co: string) => {
+const nightsOf = (
+  ci: string,
+  co: string
+) => {
   const dates: string[] = [];
 
-  for (let d = ci; d < co; d = addDays(d, 1)) {
+  for (
+    let d = ci;
+    d < co;
+    d = addDays(d, 1)
+  ) {
     dates.push(d);
   }
 
@@ -70,9 +99,13 @@ const genCode = () => {
   let code = "MM-";
 
   for (let i = 0; i < 6; i++) {
-    code += chars[
-      Math.floor(Math.random() * chars.length)
-    ];
+    code +=
+      chars[
+        Math.floor(
+          Math.random() *
+            chars.length
+        )
+      ];
   }
 
   return code;
@@ -103,7 +136,9 @@ function priceForDate(
   date: string,
   overrides: OverrideRow[]
 ) {
-  const match = [...overrides]
+  const match = [
+    ...overrides,
+  ]
     .reverse()
     .find(
       (o) =>
@@ -112,7 +147,10 @@ function priceForDate(
         date <= o.end_date
     );
 
-  return match?.price ?? BASE_RATE;
+  return (
+    match?.price ??
+    BASE_RATE
+  );
 }
 
 function quote(
@@ -121,23 +159,30 @@ function quote(
   rate: RateType,
   overrides: OverrideRow[]
 ) {
-  const prices = nightsOf(ci, co).map(
-    (date) => {
-      const flex = priceForDate(
-        date,
-        overrides
-      );
+  const prices =
+    nightsOf(
+      ci,
+      co
+    ).map((date) => {
+      const flex =
+        priceForDate(
+          date,
+          overrides
+        );
 
-      return rate === "flexible"
+      return rate ===
+        "flexible"
         ? flex
         : Math.round(
-            flex * (1 - NONREF_DISCOUNT)
+            flex *
+              (1 -
+                NONREF_DISCOUNT)
           );
-    }
-  );
+    });
 
   return prices.reduce(
-    (sum, value) => sum + value,
+    (sum, value) =>
+      sum + value,
     0
   );
 }
@@ -145,10 +190,11 @@ function quote(
 /*
  * MM Home rule:
  *
- * Existing booking 18 -> 20
- * blocks new check-in on 18, 19 and 20.
+ * Booking 18 -> 20
+ * makes 18, 19 and 20 unavailable
+ * for a new check-in.
  *
- * Next possible check-in = 21.
+ * Next arrival = 21.
  */
 async function datesTaken(
   checkIn: string,
@@ -156,25 +202,35 @@ async function datesTaken(
   ignoreBookingId?: string
 ) {
   const db = getDB();
-  const now = new Date().toISOString();
 
-  const bookings = await db
+  const now =
+    new Date().toISOString();
+
+  const booking = await db
     .prepare(`
       SELECT id
       FROM bookings
       WHERE
-        status IN ('pending', 'confirmed')
+        status IN (
+          'pending',
+          'confirmed'
+        )
         AND (
           status = 'confirmed'
           OR (
             status = 'pending'
-            AND expires_at IS NOT NULL
+            AND expires_at
+              IS NOT NULL
             AND expires_at > ?
           )
         )
         AND check_in <= ?
         AND check_out >= ?
-        ${ignoreBookingId ? "AND id != ?" : ""}
+        ${
+          ignoreBookingId
+            ? "AND id != ?"
+            : ""
+        }
       LIMIT 1
     `)
     .bind(
@@ -185,9 +241,13 @@ async function datesTaken(
         ? [ignoreBookingId]
         : [])
     )
-    .first<{ id: string }>();
+    .first<{
+      id: string;
+    }>();
 
-  if (bookings) return true;
+  if (booking) {
+    return true;
+  }
 
   const block = await db
     .prepare(`
@@ -198,47 +258,71 @@ async function datesTaken(
         AND end_date >= ?
       LIMIT 1
     `)
-    .bind(checkOut, checkIn)
-    .first<{ id: string }>();
+    .bind(
+      checkOut,
+      checkIn
+    )
+    .first<{
+      id: string;
+    }>();
 
   return !!block;
 }
 
-export const adminDataD1 = createServerFn({
-  method: "GET",
-}).handler(async () => {
-  const db = getDB();
+/* ADMIN DATA */
 
-  const bookings = await db
-    .prepare(`
-      SELECT *
-      FROM bookings
-      ORDER BY check_in DESC
-    `)
-    .all<BookingRow>();
+export const adminDataD1 =
+  createServerFn({
+    method: "GET",
+  }).handler(async () => {
+    await requireAdmin();
 
-  const blocks = await db
-    .prepare(`
-      SELECT *
-      FROM blocks
-      ORDER BY start_date
-    `)
-    .all<BlockRow>();
+    const db = getDB();
 
-  const overrides = await db
-    .prepare(`
-      SELECT *
-      FROM price_overrides
-      ORDER BY start_date
-    `)
-    .all<OverrideRow>();
+    const bookings =
+      await db
+        .prepare(`
+          SELECT *
+          FROM bookings
+          ORDER BY
+            check_in DESC
+        `)
+        .all<BookingRow>();
 
-  return {
-    bookings: bookings.results ?? [],
-    blocks: blocks.results ?? [],
-    overrides: overrides.results ?? [],
-  };
-});
+    const blocks =
+      await db
+        .prepare(`
+          SELECT *
+          FROM blocks
+          ORDER BY
+            start_date
+        `)
+        .all<BlockRow>();
+
+    const overrides =
+      await db
+        .prepare(`
+          SELECT *
+          FROM price_overrides
+          ORDER BY
+            start_date
+        `)
+        .all<OverrideRow>();
+
+    return {
+      bookings:
+        bookings.results ??
+        [],
+      blocks:
+        blocks.results ??
+        [],
+      overrides:
+        overrides.results ??
+        [],
+    };
+  });
+
+/* MANUAL BOOKING */
 
 type ManualBookingInput = {
   checkIn: string;
@@ -255,85 +339,102 @@ export const adminCreateBookingD1 =
     method: "POST",
   })
     .inputValidator(
-      (d: ManualBookingInput) => d
+      (
+        d: ManualBookingInput
+      ) => d
     )
-    .handler(async ({ data }) => {
-      if (
-        !data.checkIn ||
-        !data.checkOut ||
-        data.checkOut <= data.checkIn
-      ) {
+    .handler(
+      async ({ data }) => {
+        await requireAdmin();
+
+        if (
+          !data.checkIn ||
+          !data.checkOut ||
+          data.checkOut <=
+            data.checkIn
+        ) {
+          return {
+            error:
+              "order" as const,
+          };
+        }
+
+        if (
+          await datesTaken(
+            data.checkIn,
+            data.checkOut
+          )
+        ) {
+          return {
+            error:
+              "taken" as const,
+          };
+        }
+
+        const db =
+          getDB();
+
+        const overrides =
+          await loadOverrides();
+
+        const total =
+          quote(
+            data.checkIn,
+            data.checkOut,
+            data.rate,
+            overrides
+          );
+
+        await db
+          .prepare(`
+            INSERT INTO bookings (
+              id,
+              code,
+              check_in,
+              check_out,
+              guests,
+              name,
+              email,
+              phone,
+              rate,
+              total,
+              status,
+              payment_status,
+              source,
+              expires_at
+            )
+            VALUES (
+              ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?,
+              'confirmed',
+              'paid',
+              'manual',
+              NULL
+            )
+          `)
+          .bind(
+            genId(),
+            genCode(),
+            data.checkIn,
+            data.checkOut,
+            data.guests,
+            data.name.trim(),
+            data.email
+              .trim()
+              .toLowerCase(),
+            data.phone.trim(),
+            data.rate,
+            total
+          )
+          .run();
+
         return {
-          error: "order" as const,
+          ok: true as const,
         };
       }
+    );
 
-      if (
-        await datesTaken(
-          data.checkIn,
-          data.checkOut
-        )
-      ) {
-        return {
-          error: "taken" as const,
-        };
-      }
-
-      const db = getDB();
-      const overrides =
-        await loadOverrides();
-
-      const total = quote(
-        data.checkIn,
-        data.checkOut,
-        data.rate,
-        overrides
-      );
-
-      await db
-        .prepare(`
-          INSERT INTO bookings (
-            id,
-            code,
-            check_in,
-            check_out,
-            guests,
-            name,
-            email,
-            phone,
-            rate,
-            total,
-            status,
-            payment_status,
-            source,
-            expires_at
-          )
-          VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-            'confirmed',
-            'paid',
-            'manual',
-            NULL
-          )
-        `)
-        .bind(
-          genId(),
-          genCode(),
-          data.checkIn,
-          data.checkOut,
-          data.guests,
-          data.name.trim(),
-          data.email.trim().toLowerCase(),
-          data.phone.trim(),
-          data.rate,
-          total
-        )
-        .run();
-
-      return {
-        ok: true as const,
-      };
-    });
+/* BOOKING STATUS */
 
 export const adminSetBookingStatusD1 =
   createServerFn({
@@ -347,74 +448,88 @@ export const adminSetBookingStatusD1 =
           | "cancelled";
       }) => d
     )
-    .handler(async ({ data }) => {
-      const db = getDB();
+    .handler(
+      async ({ data }) => {
+        await requireAdmin();
 
-      const booking = await db
-        .prepare(`
-          SELECT
-            id,
-            check_in,
-            check_out
-          FROM bookings
-          WHERE id = ?
-        `)
-        .bind(data.id)
-        .first<{
-          id: string;
-          check_in: string;
-          check_out: string;
-        }>();
+        const db =
+          getDB();
 
-      if (!booking) {
-        return {
-          error: "invalid" as const,
-        };
-      }
+        const booking =
+          await db
+            .prepare(`
+              SELECT
+                id,
+                check_in,
+                check_out
+              FROM bookings
+              WHERE id = ?
+            `)
+            .bind(data.id)
+            .first<{
+              id: string;
+              check_in: string;
+              check_out: string;
+            }>();
 
-      if (
-        data.status === "confirmed"
-      ) {
-        if (
-          await datesTaken(
-            booking.check_in,
-            booking.check_out,
-            booking.id
-          )
-        ) {
+        if (!booking) {
           return {
-            error: "taken" as const,
+            error:
+              "invalid" as const,
           };
         }
 
-        await db
-          .prepare(`
-            UPDATE bookings
-            SET
-              status = 'confirmed',
-              refund = NULL,
-              expires_at = NULL
-            WHERE id = ?
-          `)
-          .bind(data.id)
-          .run();
-      } else {
-        await db
-          .prepare(`
-            UPDATE bookings
-            SET
-              status = 'cancelled',
-              refund = 0
-            WHERE id = ?
-          `)
-          .bind(data.id)
-          .run();
-      }
+        if (
+          data.status ===
+          "confirmed"
+        ) {
+          if (
+            await datesTaken(
+              booking.check_in,
+              booking.check_out,
+              booking.id
+            )
+          ) {
+            return {
+              error:
+                "taken" as const,
+            };
+          }
 
-      return {
-        ok: true as const,
-      };
-    });
+          await db
+            .prepare(`
+              UPDATE bookings
+              SET
+                status =
+                  'confirmed',
+                refund = NULL,
+                expires_at =
+                  NULL
+              WHERE id = ?
+            `)
+            .bind(data.id)
+            .run();
+        } else {
+          await db
+            .prepare(`
+              UPDATE bookings
+              SET
+                status =
+                  'cancelled',
+                refund = 0
+              WHERE id = ?
+            `)
+            .bind(data.id)
+            .run();
+        }
+
+        return {
+          ok: true as const,
+        };
+      }
+    );
+
+/* BLOCKS */
 
 export const adminAddBlockD1 =
   createServerFn({
@@ -427,76 +542,94 @@ export const adminAddBlockD1 =
         reason: string;
       }) => d
     )
-    .handler(async ({ data }) => {
-      if (
-        !data.start ||
-        !data.end ||
-        data.end < data.start
-      ) {
-        return {
-          error: "order" as const,
-        };
-      }
+    .handler(
+      async ({ data }) => {
+        await requireAdmin();
 
-      if (
-        await datesTaken(
-          data.start,
-          data.end
-        )
-      ) {
-        return {
-          error: "taken" as const,
-        };
-      }
+        if (
+          !data.start ||
+          !data.end ||
+          data.end <
+            data.start
+        ) {
+          return {
+            error:
+              "order" as const,
+          };
+        }
 
-      const db = getDB();
-
-      await db
-        .prepare(`
-          INSERT INTO blocks (
-            id,
-            start_date,
-            end_date,
-            reason
+        if (
+          await datesTaken(
+            data.start,
+            data.end
           )
-          VALUES (?, ?, ?, ?)
-        `)
-        .bind(
-          genId(),
-          data.start,
-          data.end,
-          data.reason.trim() ||
-            "Blocked"
-        )
-        .run();
+        ) {
+          return {
+            error:
+              "taken" as const,
+          };
+        }
 
-      return {
-        ok: true as const,
-      };
-    });
+        const db =
+          getDB();
+
+        await db
+          .prepare(`
+            INSERT INTO blocks (
+              id,
+              start_date,
+              end_date,
+              reason
+            )
+            VALUES (?, ?, ?, ?)
+          `)
+          .bind(
+            genId(),
+            data.start,
+            data.end,
+            data.reason
+              .trim() ||
+              "Blocked"
+          )
+          .run();
+
+        return {
+          ok: true as const,
+        };
+      }
+    );
 
 export const adminRemoveBlockD1 =
   createServerFn({
     method: "POST",
   })
     .inputValidator(
-      (d: { id: string }) => d
+      (d: {
+        id: string;
+      }) => d
     )
-    .handler(async ({ data }) => {
-      const db = getDB();
+    .handler(
+      async ({ data }) => {
+        await requireAdmin();
 
-      await db
-        .prepare(`
-          DELETE FROM blocks
-          WHERE id = ?
-        `)
-        .bind(data.id)
-        .run();
+        const db =
+          getDB();
 
-      return {
-        ok: true as const,
-      };
-    });
+        await db
+          .prepare(`
+            DELETE FROM blocks
+            WHERE id = ?
+          `)
+          .bind(data.id)
+          .run();
+
+        return {
+          ok: true as const,
+        };
+      }
+    );
+
+/* PRICE OVERRIDES */
 
 export const adminAddOverrideD1 =
   createServerFn({
@@ -511,82 +644,103 @@ export const adminAddOverrideD1 =
         label?: string;
       }) => d
     )
-    .handler(async ({ data }) => {
-      if (
-        !data.start ||
-        !data.end ||
-        data.end < data.start ||
-        (!data.price &&
-          !data.minNights)
-      ) {
+    .handler(
+      async ({ data }) => {
+        await requireAdmin();
+
+        if (
+          !data.start ||
+          !data.end ||
+          data.end <
+            data.start ||
+          (!data.price &&
+            !data.minNights)
+        ) {
+          return {
+            error:
+              "invalid" as const,
+          };
+        }
+
+        const db =
+          getDB();
+
+        await db
+          .prepare(`
+            INSERT INTO price_overrides (
+              id,
+              start_date,
+              end_date,
+              price,
+              min_nights,
+              label
+            )
+            VALUES (
+              ?, ?, ?, ?, ?, ?
+            )
+          `)
+          .bind(
+            genId(),
+            data.start,
+            data.end,
+            data.price
+              ? Math.max(
+                  1,
+                  Math.floor(
+                    data.price
+                  )
+                )
+              : null,
+            data.minNights
+              ? Math.max(
+                  1,
+                  Math.floor(
+                    data.minNights
+                  )
+                )
+              : null,
+            (
+              data.label ?? ""
+            ).slice(
+              0,
+              100
+            )
+          )
+          .run();
+
         return {
-          error: "invalid" as const,
+          ok: true as const,
         };
       }
-
-      const db = getDB();
-
-      await db
-        .prepare(`
-          INSERT INTO price_overrides (
-            id,
-            start_date,
-            end_date,
-            price,
-            min_nights,
-            label
-          )
-          VALUES (?, ?, ?, ?, ?, ?)
-        `)
-        .bind(
-          genId(),
-          data.start,
-          data.end,
-          data.price
-            ? Math.max(
-                1,
-                Math.floor(data.price)
-              )
-            : null,
-          data.minNights
-            ? Math.max(
-                1,
-                Math.floor(
-                  data.minNights
-                )
-              )
-            : null,
-          (data.label ?? "").slice(
-            0,
-            100
-          )
-        )
-        .run();
-
-      return {
-        ok: true as const,
-      };
-    });
+    );
 
 export const adminRemoveOverrideD1 =
   createServerFn({
     method: "POST",
   })
     .inputValidator(
-      (d: { id: string }) => d
+      (d: {
+        id: string;
+      }) => d
     )
-    .handler(async ({ data }) => {
-      const db = getDB();
+    .handler(
+      async ({ data }) => {
+        await requireAdmin();
 
-      await db
-        .prepare(`
-          DELETE FROM price_overrides
-          WHERE id = ?
-        `)
-        .bind(data.id)
-        .run();
+        const db =
+          getDB();
 
-      return {
-        ok: true as const,
-      };
-    });
+        await db
+          .prepare(`
+            DELETE FROM
+              price_overrides
+            WHERE id = ?
+          `)
+          .bind(data.id)
+          .run();
+
+        return {
+          ok: true as const,
+        };
+      }
+    );
