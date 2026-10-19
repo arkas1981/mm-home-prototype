@@ -1,5 +1,3 @@
-import "@tanstack/react-start/server-only";
-
 import {
   deleteCookie,
   getCookie,
@@ -160,13 +158,15 @@ async function verifySessionToken(
 }
 
 export async function isAdminAuthenticated() {
-  const token = getCookie(COOKIE_NAME);
-
-  return verifySessionToken(token);
+  return verifySessionToken(
+    getCookie(COOKIE_NAME)
+  );
 }
 
 export async function requireAdminSession() {
-  if (!(await isAdminAuthenticated())) {
+  const valid = await isAdminAuthenticated();
+
+  if (!valid) {
     throw new Error("Unauthorized");
   }
 }
