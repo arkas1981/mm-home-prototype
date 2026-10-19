@@ -4,7 +4,7 @@ import {
   setCookie,
 } from "@tanstack/react-start/server";
 
-import { cloudflareRequestEnv } from "../server";
+import { env } from "cloudflare:workers";
 
 const COOKIE_NAME = "__Host-mmhome-admin";
 const SESSION_SECONDS = 60 * 60 * 12;
@@ -16,24 +16,24 @@ type AdminEnv = {
 };
 
 function getAdminEnv(): AdminEnv {
-  return (cloudflareRequestEnv.getStore() ?? {}) as AdminEnv;
+  return env as unknown as AdminEnv;
 }
 
 export function adminEnvironmentStatus() {
-  const env = getAdminEnv();
+  const e = getAdminEnv();
 
   return {
     emailLoaded:
-      typeof env.ADMIN_EMAIL === "string" &&
-      env.ADMIN_EMAIL.length > 0,
+      typeof e.ADMIN_EMAIL === "string" &&
+      e.ADMIN_EMAIL.length > 0,
 
     passwordLoaded:
-      typeof env.ADMIN_PASSWORD === "string" &&
-      env.ADMIN_PASSWORD.length > 0,
+      typeof e.ADMIN_PASSWORD === "string" &&
+      e.ADMIN_PASSWORD.length > 0,
 
     sessionSecretLoaded:
-      typeof env.ADMIN_SESSION_SECRET === "string" &&
-      env.ADMIN_SESSION_SECRET.length >= 32,
+      typeof e.ADMIN_SESSION_SECRET === "string" &&
+      e.ADMIN_SESSION_SECRET.length >= 32,
   };
 }
 
@@ -57,9 +57,7 @@ function base64UrlToBytes(value: string) {
 
   const padded =
     normal +
-    "=".repeat(
-      (4 - (normal.length % 4)) % 4
-    );
+    "=".repeat((4 - (normal.length % 4)) % 4);
 
   const binary = atob(padded);
 
@@ -83,8 +81,7 @@ async function getHmacKey(secret: string) {
 }
 
 async function createSessionToken() {
-  const { ADMIN_SESSION_SECRET } =
-    getAdminEnv();
+  const { ADMIN_SESSION_SECRET } = getAdminEnv();
 
   if (
     !ADMIN_SESSION_SECRET ||
@@ -102,23 +99,19 @@ async function createSessionToken() {
       SESSION_SECONDS,
   });
 
-  const payloadEncoded =
-    bytesToBase64Url(
-      new TextEncoder().encode(payload)
-    );
+  const payloadEncoded = bytesToBase64Url(
+    new TextEncoder().encode(payload)
+  );
 
-  const key =
-    await getHmacKey(
-      ADMIN_SESSION_SECRET
-    );
+  const key = await getHmacKey(
+    ADMIN_SESSION_SECRET
+  );
 
   const signature =
     await crypto.subtle.sign(
       "HMAC",
       key,
-      new TextEncoder().encode(
-        payloadEncoded
-      )
+      new TextEncoder().encode(payloadEncoded)
     );
 
   return `${payloadEncoded}.${bytesToBase64Url(
@@ -126,13 +119,10 @@ async function createSessionToken() {
   )}`;
 }
 
-async function verifySessionToken(
-  token?: string
-) {
+async function verifySessionToken(token?: string) {
   if (!token) return false;
 
-  const { ADMIN_SESSION_SECRET } =
-    getAdminEnv();
+  const { ADMIN_SESSION_SECRET } = getAdminEnv();
 
   if (
     !ADMIN_SESSION_SECRET ||
@@ -141,57 +131,42 @@ async function verifySessionToken(
     return false;
   }
 
-  const [
-    payloadEncoded,
-    signatureEncoded,
-  ] = token.split(".");
+  const [payloadEncoded, signatureEncoded] =
+    token.split(".");
 
-  if (
-    !payloadEncoded ||
-    !signatureEncoded
-  ) {
+  if (!payloadEncoded || !signatureEncoded) {
     return false;
   }
 
   try {
-    const key =
-      await getHmacKey(
-        ADMIN_SESSION_SECRET
-      );
+    const key = await getHmacKey(
+      ADMIN_SESSION_SECRET
+    );
 
     const valid =
       await crypto.subtle.verify(
         "HMAC",
         key,
-        base64UrlToBytes(
-          signatureEncoded
-        ),
-        new TextEncoder().encode(
-          payloadEncoded
-        )
+        base64UrlToBytes(signatureEncoded),
+        new TextEncoder().encode(payloadEncoded)
       );
 
     if (!valid) return false;
 
-    const payload =
-      JSON.parse(
-        new TextDecoder().decode(
-          base64UrlToBytes(
-            payloadEncoded
-          )
-        )
-      ) as {
-        role?: string;
-        exp?: number;
-      };
+    const payload = JSON.parse(
+      new TextDecoder().decode(
+        base64UrlToBytes(payloadEncoded)
+      )
+    ) as {
+      role?: string;
+      exp?: number;
+    };
 
     return (
       payload.role === "admin" &&
       typeof payload.exp === "number" &&
       payload.exp >
-        Math.floor(
-          Date.now() / 1000
-        )
+        Math.floor(Date.now() / 1000)
     );
   } catch {
     return false;
@@ -205,9 +180,7 @@ export async function isAdminAuthenticated() {
 }
 
 export async function requireAdminSession() {
-  if (
-    !(await isAdminAuthenticated())
-  ) {
+  if (!(await isAdminAuthenticated())) {
     throw new Error("Unauthorized");
   }
 }
@@ -230,40 +203,29 @@ export async function loginAdmin(
 
   if (
     email.trim().toLowerCase() !==
-      ADMIN_EMAIL
-        .trim()
-        .toLowerCase() ||
+      ADMIN_EMAIL.trim().toLowerCase() ||
     password !== ADMIN_PASSWORD
   ) {
     return false;
   }
 
-  const token =
-    await createSessionToken();
+  const token = await createSessionToken();
 
-  setCookie(
-    COOKIE_NAME,
-    token,
-    {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/",
-      maxAge:
-        SESSION_SECONDS,
-    }
-  );
+  setCookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+    maxAge: SESSION_SECONDS,
+  });
 
   return true;
 }
 
 export function logoutAdmin() {
-  deleteCookie(
-    COOKIE_NAME,
-    {
-      secure: true,
-      sameSite: "strict",
-      path: "/",
-    }
-  );
+  deleteCookie(COOKIE_NAME, {
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+  });
 }
