@@ -2,7 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { adminAddBlock, adminAddOverride, adminCreateBooking, adminData, adminRemoveBlock, adminRemoveOverride, adminSetBookingStatus } from "@/lib/cloud.functions";
+import {
+  adminAddBlockD1 as adminAddBlock,
+  adminAddOverrideD1 as adminAddOverride,
+  adminCreateBookingD1 as adminCreateBooking,
+  adminDataD1 as adminData,
+  adminRemoveBlockD1 as adminRemoveBlock,
+  adminRemoveOverrideD1 as adminRemoveOverride,
+  adminSetBookingStatusD1 as adminSetBookingStatus,
+} from "@/lib/d1-admin.functions";
 import { toBlock, toBooking, toOverride, type BookingRow } from "@/lib/cloud-data";
 import type { Block, Override } from "@/lib/booking";
 import { ChevronLeft, ChevronRight, Lock, LogOut } from "lucide-react";
