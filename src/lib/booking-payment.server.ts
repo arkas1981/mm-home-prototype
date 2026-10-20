@@ -666,9 +666,6 @@ export async function startCheckout(
         mode:
           "payment",
 
-        "payment_method_types[0]":
-          "card",
-
         success_url:
           "https://mmhome.gr/book-success?session_id={CHECKOUT_SESSION_ID}",
 
