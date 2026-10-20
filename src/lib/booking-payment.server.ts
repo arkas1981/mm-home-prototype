@@ -77,8 +77,7 @@ const nightsOf = (
   checkIn: string,
   checkOut: string
 ) => {
-  const dates: string[] =
-    [];
+  const dates: string[] = [];
 
   for (
     let d = checkIn;
@@ -139,8 +138,7 @@ function overrideFor(
     .find(
       (o) =>
         o[key] != null &&
-        date >=
-          o.start_date &&
+        date >= o.start_date &&
         date <= o.end_date
     )?.[key];
 }
@@ -223,8 +221,7 @@ async function getCurrentQuote(
           BASE_RATE;
 
         const price =
-          rate ===
-          "flexible"
+          rate === "flexible"
             ? flexible
             : Math.round(
                 flexible *
@@ -232,9 +229,7 @@ async function getCurrentQuote(
                     NONREF_DISCOUNT)
               );
 
-        return (
-          sum + price
-        );
+        return sum + price;
       },
       0
     );
@@ -261,8 +256,7 @@ async function datesTaken(
       DELETE FROM bookings
       WHERE
         status = 'pending'
-        AND expires_at
-          IS NOT NULL
+        AND expires_at IS NOT NULL
         AND expires_at <= ?
     `)
     .bind(now)
@@ -279,13 +273,10 @@ async function datesTaken(
             'confirmed'
           )
           AND (
-            status =
-              'confirmed'
+            status = 'confirmed'
             OR (
-              status =
-                'pending'
-              AND expires_at
-                IS NOT NULL
+              status = 'pending'
+              AND expires_at IS NOT NULL
               AND expires_at > ?
             )
           )
@@ -342,6 +333,9 @@ function stripeKey() {
       ) ||
       key.startsWith(
         "sk_live_"
+      ) ||
+      key.startsWith(
+        "rk_live_"
       )
     )
   ) {
@@ -680,8 +674,7 @@ export async function startCheckout(
 
         "line_items[0][price_data][unit_amount]":
           String(
-            quote.total *
-              100
+            quote.total * 100
           ),
 
         "line_items[0][price_data][product_data][name]":
@@ -717,8 +710,7 @@ export async function startCheckout(
         DELETE FROM bookings
         WHERE
           id = ?
-          AND status =
-            'pending'
+          AND status = 'pending'
       `)
       .bind(id)
       .run();
@@ -856,15 +848,12 @@ export async function confirmCheckout(
     .prepare(`
       UPDATE bookings
       SET
-        status =
-          'confirmed',
-        payment_status =
-          'paid',
+        status = 'confirmed',
+        payment_status = 'paid',
         expires_at = NULL
       WHERE
         id = ?
-        AND status =
-          'pending'
+        AND status = 'pending'
     `)
     .bind(
       booking.id
