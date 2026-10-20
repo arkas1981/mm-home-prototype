@@ -1,5 +1,6 @@
 import {
   createFileRoute,
+  Link,
 } from "@tanstack/react-router";
 
 import {
@@ -13,6 +14,7 @@ import {
 import {
   CalendarDays,
   CheckCircle2,
+  CreditCard,
   Search,
   Users,
   XCircle,
@@ -35,6 +37,10 @@ import {
 } from "@/lib/availability.functions";
 
 import {
+  createBookingCheckout,
+} from "@/lib/booking-payment.functions";
+
+import {
   MAX_GUESTS,
   type RateType,
 } from "@/lib/booking";
@@ -46,7 +52,7 @@ export const Route =
     head: () =>
       meta(
         "Κράτηση — MM Home Τρίκαλα",
-        "Ελέγξτε διαθεσιμότητα και τιμές για τη διαμονή σας στο MM Home."
+        "Ελέγξτε διαθεσιμότητα και ολοκληρώστε την κράτησή σας στο MM Home."
       ),
     component: Book,
   });
@@ -76,12 +82,23 @@ function Book() {
     lang,
   } = useT();
 
+  const isGreek =
+    lang === "el";
+
   const check =
     useServerFn(
       checkAvailability
     );
 
-  const [checkIn, setCheckIn] =
+  const checkout =
+    useServerFn(
+      createBookingCheckout
+    );
+
+  const [
+    checkIn,
+    setCheckIn,
+  ] =
     useState("");
 
   const [
@@ -100,7 +117,9 @@ function Book() {
     result,
     setResult,
   ] =
-    useState<Result>(null);
+    useState<Result>(
+      null
+    );
 
   const [
     checking,
@@ -108,13 +127,38 @@ function Book() {
   ] =
     useState(false);
 
-  const [rate, setRate] =
+  const [
+    paying,
+    setPaying,
+  ] =
+    useState(false);
+
+  const [
+    rate,
+    setRate,
+  ] =
     useState<RateType>(
       "nonref"
     );
 
-  const isGreek =
-    lang === "el";
+  const [
+    form,
+    setForm,
+  ] =
+    useState({
+      name: "",
+      email: "",
+      phone: "",
+      adult: false,
+      terms: false,
+      nonrefAck: false,
+    });
+
+  const [
+    error,
+    setError,
+  ] =
+    useState("");
 
   const runCheck =
     async () => {
@@ -127,6 +171,7 @@ function Book() {
 
       setChecking(true);
       setResult(null);
+      setError("");
 
       try {
         const response =
@@ -146,54 +191,186 @@ function Book() {
       }
     };
 
-  const reasonText = () => {
-    if (
-      !result ||
-      result.available
-    ) {
-      return "";
-    }
+  const selectedTotal =
+    result &&
+    result.available
+      ? rate ===
+        "flexible"
+        ? result.flexibleTotal
+        : result.nonRefundableTotal
+      : 0;
 
-    if (
-      result.reason ===
-      "taken"
-    ) {
+  const detailsValid =
+    form.name
+      .trim()
+      .length >= 2 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+      form.email.trim()
+    ) &&
+    form.phone.replace(
+      /\D/g,
+      ""
+    ).length >= 8 &&
+    form.adult &&
+    form.terms &&
+    (
+      rate ===
+        "flexible" ||
+      form.nonrefAck
+    );
+
+  const pay =
+    async () => {
+      if (
+        !result ||
+        !result.available ||
+        !detailsValid ||
+        paying
+      ) {
+        setError(
+          isGreek
+            ? "Συμπληρώστε σωστά όλα τα στοιχεία και αποδεχτείτε τους όρους."
+            : "Please complete all details and accept the terms."
+        );
+
+        return;
+      }
+
+      setPaying(true);
+      setError("");
+
+      try {
+        const response =
+          await checkout({
+            data: {
+              checkIn,
+              checkOut,
+              guests,
+              name:
+                form.name,
+              email:
+                form.email,
+              phone:
+                form.phone,
+              rate,
+              adult:
+                form.adult,
+              terms:
+                form.terms,
+              nonrefAck:
+                form.nonrefAck,
+              expectedTotal:
+                selectedTotal,
+            },
+          });
+
+        if (
+          "url" in
+            response &&
+          response.url
+        ) {
+          window.location.href =
+            response.url;
+
+          return;
+        }
+
+        if (
+          "error" in
+            response
+        ) {
+          if (
+            response.error ===
+            "taken"
+          ) {
+            setError(
+              isGreek
+                ? "Οι ημερομηνίες μόλις έγιναν μη διαθέσιμες. Επιλέξτε άλλες ημερομηνίες."
+                : "These dates have just become unavailable. Please choose different dates."
+            );
+          } else if (
+            response.error ===
+            "price_changed"
+          ) {
+            setError(
+              isGreek
+                ? "Η τιμή άλλαξε. Κάντε ξανά έλεγχο διαθεσιμότητας."
+                : "The price has changed. Please check availability again."
+            );
+          } else if (
+            response.error ===
+            "min"
+          ) {
+            setError(
+              isGreek
+                ? `Η ελάχιστη διαμονή είναι ${response.minNights ?? 2} νύχτες.`
+                : `Minimum stay is ${response.minNights ?? 2} nights.`
+            );
+          } else {
+            setError(
+              isGreek
+                ? "Δεν ήταν δυνατή η έναρξη της πληρωμής."
+                : "Payment could not be started."
+            );
+          }
+        }
+      } catch {
+        setError(
+          isGreek
+            ? "Η Stripe δεν είναι διαθέσιμη αυτή τη στιγμή."
+            : "Stripe is unavailable right now."
+        );
+      }
+
+      setPaying(false);
+    };
+
+  const resetResult =
+    () => {
+      setResult(null);
+      setError("");
+    };
+
+  const reasonText =
+    () => {
+      if (
+        !result ||
+        result.available
+      ) {
+        return "";
+      }
+
+      if (
+        result.reason ===
+        "taken"
+      ) {
+        return isGreek
+          ? "Οι συγκεκριμένες ημερομηνίες δεν είναι διαθέσιμες."
+          : "These dates are not available.";
+      }
+
+      if (
+        result.reason ===
+        "lead"
+      ) {
+        return isGreek
+          ? "Η κράτηση πρέπει να γίνεται τουλάχιστον 2 ημερολογιακές ημέρες πριν την άφιξη."
+          : "Bookings must be made at least 2 calendar days before arrival.";
+      }
+
+      if (
+        result.reason ===
+        "min"
+      ) {
+        return isGreek
+          ? `Η ελάχιστη διαμονή είναι ${result.minNights ?? 2} νύχτες.`
+          : `Minimum stay is ${result.minNights ?? 2} nights.`;
+      }
+
       return isGreek
-        ? "Οι συγκεκριμένες ημερομηνίες δεν είναι διαθέσιμες."
-        : "These dates are not available.";
-    }
-
-    if (
-      result.reason ===
-      "lead"
-    ) {
-      return isGreek
-        ? "Η κράτηση πρέπει να γίνεται τουλάχιστον 2 ημερολογιακές ημέρες πριν την άφιξη."
-        : "Bookings must be made at least 2 calendar days before arrival.";
-    }
-
-    if (
-      result.reason ===
-      "min"
-    ) {
-      return isGreek
-        ? `Η ελάχιστη διαμονή για αυτές τις ημερομηνίες είναι ${result.minNights ?? 2} νύχτες.`
-        : `The minimum stay for these dates is ${result.minNights ?? 2} nights.`;
-    }
-
-    if (
-      result.reason ===
-      "guests"
-    ) {
-      return isGreek
-        ? "Επιλέξτε από 1 έως 6 επισκέπτες."
-        : "Please select between 1 and 6 guests.";
-    }
-
-    return isGreek
-      ? "Ελέγξτε τις ημερομηνίες άφιξης και αναχώρησης."
-      : "Please check your arrival and departure dates.";
-  };
+        ? "Ελέγξτε τις ημερομηνίες και τον αριθμό επισκεπτών."
+        : "Please check the dates and guest count.";
+    };
 
   return (
     <>
@@ -205,12 +382,12 @@ function Book() {
         }
         sub={
           isGreek
-            ? "Ελέγξτε πρώτα αν οι ημερομηνίες που σας ενδιαφέρουν είναι διαθέσιμες."
-            : "First check whether your preferred dates are available."
+            ? "Ελέγξτε τις ημερομηνίες σας και ολοκληρώστε με ασφαλή πληρωμή."
+            : "Check your dates and complete your booking securely."
         }
       />
 
-      <section className="mx-auto max-w-4xl px-5 pb-24">
+      <section className="mx-auto max-w-4xl px-5 pb-24 space-y-6">
         <div className="panel p-6 md:p-8">
           <div className="grid md:grid-cols-3 gap-4">
             <label className="text-sm">
@@ -234,9 +411,8 @@ function Book() {
                   setCheckIn(
                     e.target.value
                   );
-                  setResult(
-                    null
-                  );
+
+                  resetResult();
                 }}
               />
             </label>
@@ -262,9 +438,8 @@ function Book() {
                   setCheckOut(
                     e.target.value
                   );
-                  setResult(
-                    null
-                  );
+
+                  resetResult();
                 }}
               />
             </label>
@@ -293,9 +468,7 @@ function Book() {
                     )
                   );
 
-                  setResult(
-                    null
-                  );
+                  resetResult();
                 }}
               >
                 {Array.from(
@@ -343,17 +516,11 @@ function Book() {
               ? "Έλεγχος διαθεσιμότητας"
               : "Check availability"}
           </button>
-
-          <p className="mt-4 text-xs text-muted-foreground text-center">
-            {isGreek
-              ? "Η πλήρης διαθεσιμότητα του καταλύματος δεν εμφανίζεται δημόσια."
-              : "The property's full availability calendar is not displayed publicly."}
-          </p>
         </div>
 
         {result &&
           !result.available && (
-            <div className="panel p-6 mt-6 border-destructive/30">
+            <div className="panel p-6">
               <div className="flex gap-3">
                 <XCircle className="text-destructive shrink-0" />
 
@@ -367,12 +534,6 @@ function Book() {
                   <p className="mt-2 text-muted-foreground">
                     {reasonText()}
                   </p>
-
-                  <p className="mt-3 text-sm">
-                    {isGreek
-                      ? "Δοκιμάστε διαφορετικές ημερομηνίες."
-                      : "Please try different dates."}
-                  </p>
                 </div>
               </div>
             </div>
@@ -380,9 +541,9 @@ function Book() {
 
         {result &&
           result.available && (
-            <div className="mt-6 space-y-6">
-              <div className="panel p-6 border-primary/30">
-                <div className="flex gap-3 items-start">
+            <>
+              <div className="panel p-6">
+                <div className="flex gap-3">
                   <CheckCircle2 className="text-primary shrink-0" />
 
                   <div>
@@ -393,9 +554,14 @@ function Book() {
                     </h2>
 
                     <p className="mt-2 text-muted-foreground">
+                      {result.nights}{" "}
                       {isGreek
-                        ? `${result.nights} νύχτες · ${guests} επισκέπτες`
-                        : `${result.nights} nights · ${guests} guests`}
+                        ? "νύχτες"
+                        : "nights"}{" "}
+                      · {guests}{" "}
+                      {isGreek
+                        ? "επισκέπτες"
+                        : "guests"}
                     </p>
                   </div>
                 </div>
@@ -416,7 +582,7 @@ function Book() {
                         "nonref"
                       )
                     }
-                    className={`panel p-6 text-left transition ${
+                    className={`panel p-6 text-left ${
                       rate ===
                       "nonref"
                         ? "ring-2 ring-primary"
@@ -441,12 +607,6 @@ function Book() {
                         result.nonRefundableTotal
                       }
                     </p>
-
-                    <p className="text-xs text-muted-foreground">
-                      {isGreek
-                        ? "τελικό σύνολο διαμονής"
-                        : "total stay price"}
-                    </p>
                   </button>
 
                   <button
@@ -456,7 +616,7 @@ function Book() {
                         "flexible"
                       )
                     }
-                    className={`panel p-6 text-left transition ${
+                    className={`panel p-6 text-left ${
                       rate ===
                       "flexible"
                         ? "ring-2 ring-primary"
@@ -481,30 +641,224 @@ function Book() {
                         result.flexibleTotal
                       }
                     </p>
-
-                    <p className="text-xs text-muted-foreground">
-                      {isGreek
-                        ? "τελικό σύνολο διαμονής"
-                        : "total stay price"}
-                    </p>
                   </button>
                 </div>
               </div>
 
-              <div className="panel p-6 text-center">
-                <p className="font-serif text-2xl">
+              <div className="panel p-6 md:p-8 space-y-4">
+                <h2 className="font-serif text-3xl">
                   {isGreek
-                    ? "Οι online πληρωμές ενεργοποιούνται σύντομα"
-                    : "Online payments are coming soon"}
-                </p>
+                    ? "Στοιχεία επισκέπτη"
+                    : "Guest details"}
+                </h2>
 
-                <p className="mt-3 text-muted-foreground">
+                <input
+                  className="field"
+                  placeholder={
+                    isGreek
+                      ? "Ονοματεπώνυμο"
+                      : "Full name"
+                  }
+                  value={
+                    form.name
+                  }
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      name:
+                        e.target
+                          .value,
+                    })
+                  }
+                />
+
+                <input
+                  className="field"
+                  type="email"
+                  placeholder="Email"
+                  value={
+                    form.email
+                  }
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      email:
+                        e.target
+                          .value,
+                    })
+                  }
+                />
+
+                <input
+                  className="field"
+                  type="tel"
+                  placeholder={
+                    isGreek
+                      ? "Κινητό"
+                      : "Mobile"
+                  }
+                  value={
+                    form.phone
+                  }
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      phone:
+                        e.target
+                          .value,
+                    })
+                  }
+                />
+
+                <label className="flex gap-3 items-start text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-1 accent-primary"
+                    checked={
+                      form.adult
+                    }
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        adult:
+                          e.target
+                            .checked,
+                      })
+                    }
+                  />
+
                   {isGreek
-                    ? "Η διαθεσιμότητα και η τιμή έχουν ελεγχθεί. Το επόμενο βήμα θα είναι η ασφαλής ολοκλήρωση της κράτησης."
-                    : "Availability and pricing have been checked. Secure booking completion will be enabled next."}
+                    ? "Ο κύριος επισκέπτης είναι 18 ετών και άνω."
+                    : "The main guest is 18 years or older."}
+                </label>
+
+                <label className="flex gap-3 items-start text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-1 accent-primary"
+                    checked={
+                      form.terms
+                    }
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        terms:
+                          e.target
+                            .checked,
+                      })
+                    }
+                  />
+
+                  <span>
+                    {isGreek
+                      ? "Έχω διαβάσει και αποδέχομαι τους "
+                      : "I have read and accept the "}
+
+                    <Link
+                      to="/terms"
+                      target="_blank"
+                      className="underline text-primary"
+                    >
+                      {isGreek
+                        ? "Όρους Κράτησης & Διαμονής"
+                        : "Booking & Stay Terms"}
+                    </Link>
+                    .
+                  </span>
+                </label>
+
+                {rate ===
+                  "nonref" && (
+                  <label className="flex gap-3 items-start text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-1 accent-primary"
+                      checked={
+                        form.nonrefAck
+                      }
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          nonrefAck:
+                            e.target
+                              .checked,
+                        })
+                      }
+                    />
+
+                    {isGreek
+                      ? "Αναγνωρίζω ότι επέλεξα τη μη επιστρέψιμη τιμή και δεν δικαιούμαι επιστροφή σε περίπτωση ακύρωσης."
+                      : "I acknowledge that I selected the non-refundable rate and will receive no refund if I cancel."}
+                  </label>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  {isGreek
+                    ? "Κατά το προσωπικό check-in θα ζητηθεί ταυτότητα ή διαβατήριο."
+                    : "An ID card or passport will be requested at personal check-in."}
                 </p>
               </div>
-            </div>
+
+              <div className="panel p-6 md:p-8">
+                <div className="flex justify-between items-end gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {isGreek
+                        ? "Τελικό σύνολο"
+                        : "Final total"}
+                    </p>
+
+                    <p className="font-serif text-4xl">
+                      €
+                      {
+                        selectedTotal
+                      }
+                    </p>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground text-right">
+                    {isGreek
+                      ? "Καθαρισμός περιλαμβάνεται · χωρίς κρυφές χρεώσεις"
+                      : "Cleaning included · no hidden fees"}
+                  </p>
+                </div>
+
+                {error && (
+                  <p className="mt-4 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  className="btn-gold w-full mt-6"
+                  disabled={
+                    paying
+                  }
+                  onClick={
+                    pay
+                  }
+                >
+                  <CreditCard
+                    size={17}
+                  />
+
+                  {paying
+                    ? isGreek
+                      ? "Μετάβαση στη Stripe..."
+                      : "Opening Stripe..."
+                    : isGreek
+                    ? `Πληρωμή €${selectedTotal}`
+                    : `Pay €${selectedTotal}`}
+                </button>
+
+                <p className="mt-3 text-xs text-center text-muted-foreground">
+                  {isGreek
+                    ? "Δοκιμαστική λειτουργία Stripe — δεν πραγματοποιείται πραγματική χρέωση."
+                    : "Stripe test mode — no real charge will be made."}
+                </p>
+              </div>
+            </>
           )}
       </section>
     </>
