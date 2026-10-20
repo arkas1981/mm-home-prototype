@@ -268,14 +268,6 @@ async function datesTaken(
     .bind(now)
     .run();
 
-  /*
-   * MM Home:
-   * checkout date is not
-   * available as new check-in.
-   *
-   * Existing 18 -> 20
-   * next arrival = 21.
-   */
   const booking =
     await db
       .prepare(`
@@ -344,12 +336,17 @@ function stripeKey() {
 
   if (
     !key ||
-    !key.startsWith(
-      "sk_test_"
+    !(
+      key.startsWith(
+        "sk_test_"
+      ) ||
+      key.startsWith(
+        "sk_live_"
+      )
     )
   ) {
     throw new Error(
-      "Stripe TEST key missing"
+      "Stripe secret key missing or invalid"
     );
   }
 
@@ -734,7 +731,7 @@ export async function confirmCheckout(
   sessionId: string
 ) {
   if (
-    !/^cs_test_[A-Za-z0-9_]+$/.test(
+    !/^cs_(test|live)_[A-Za-z0-9_]+$/.test(
       sessionId
     )
   ) {
