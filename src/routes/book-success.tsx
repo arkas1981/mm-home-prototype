@@ -1,52 +1,243 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
-import { fmtDate, useT } from "@/lib/i18n";
-import { confirmBooking } from "@/lib/cloud.functions";
-import { DepositNotice } from "@/components/DepositNotice";
-import { trackFunnel } from "@/lib/analytics";
+import {
+  createFileRoute,
+  Link,
+} from "@tanstack/react-router";
 
-export const Route = createFileRoute("/book-success")({
-  head: () => ({ meta: [{ title: "Επιβεβαίωση κράτησης — MM Home" }, { name: "description", content: "Επιβεβαίωση πληρωμής και κράτησης στο MM Home." }, { property: "og:title", content: "Επιβεβαίωση κράτησης — MM Home" }, { property: "og:description", content: "Επιβεβαίωση πληρωμής και κράτησης στο MM Home." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
-  component: Success,
-});
+import {
+  useEffect,
+  useState,
+} from "react";
 
-type Done = { code: string; check_in: string; check_out: string; guests: number; total: number };
+import {
+  useServerFn,
+} from "@tanstack/react-start";
+
+import {
+  CheckCircle2,
+} from "lucide-react";
+
+import {
+  fmtDate,
+  useT,
+} from "@/lib/i18n";
+
+import {
+  confirmBookingCheckout,
+} from "@/lib/booking-payment.functions";
+
+export const Route =
+  createFileRoute(
+    "/book-success"
+  )({
+    head: () => ({
+      meta: [
+        {
+          title:
+            "Επιβεβαίωση κράτησης — MM Home",
+        },
+        {
+          name:
+            "robots",
+          content:
+            "noindex",
+        },
+      ],
+    }),
+    component:
+      Success,
+  });
+
+type Done = {
+  code: string;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  rate: string;
+  total: number;
+  name: string;
+};
 
 function Success() {
-  const { t, lang } = useT();
-  const confirm = useServerFn(confirmBooking);
-  const [state, setState] = useState<"loading" | "error" | Done>("loading");
+  const {
+    lang,
+  } = useT();
+
+  const confirm =
+    useServerFn(
+      confirmBookingCheckout
+    );
+
+  const [
+    state,
+    setState,
+  ] =
+    useState<
+      | "loading"
+      | "error"
+      | Done
+    >(
+      "loading"
+    );
+
   useEffect(() => {
-    const sid = new URLSearchParams(window.location.search).get("session_id") ?? "";
-    // The booking is confirmed only by the server after it verifies the payment with Stripe.
-    confirm({ data: { sessionId: sid } })
-      .then((r) => { if ("booking" in r && r.booking) { setState(r.booking); trackFunnel("booking_completed"); } else setState("error"); })
-      .catch(() => setState("error"));
+    const sessionId =
+      new URLSearchParams(
+        window.location.search
+      ).get(
+        "session_id"
+      ) ?? "";
+
+    confirm({
+      data: {
+        sessionId,
+      },
+    })
+      .then(
+        (response) => {
+          if (
+            "booking" in
+              response &&
+            response.booking
+          ) {
+            setState(
+              response.booking
+            );
+          } else {
+            setState(
+              "error"
+            );
+          }
+        }
+      )
+      .catch(() =>
+        setState("error")
+      );
   }, [confirm]);
 
+  if (
+    state === "loading"
+  ) {
+    return (
+      <div className="mx-auto max-w-3xl px-5 py-24 text-center">
+        <p className="text-muted-foreground">
+          {lang === "el"
+            ? "Επιβεβαίωση πληρωμής και κράτησης..."
+            : "Confirming payment and booking..."}
+        </p>
+      </div>
+    );
+  }
+
+  if (
+    state === "error"
+  ) {
+    return (
+      <div className="mx-auto max-w-3xl px-5 py-24">
+        <div className="panel p-10 text-center">
+          <h1 className="font-serif text-4xl">
+            {lang === "el"
+              ? "Η πληρωμή δεν επιβεβαιώθηκε"
+              : "Payment not confirmed"}
+          </h1>
+
+          <p className="mt-4 text-muted-foreground">
+            {lang === "el"
+              ? "Δεν επιβεβαιώθηκε κράτηση. Επιστρέψτε στη σελίδα κράτησης ή επικοινωνήστε μαζί μας."
+              : "No booking was confirmed. Return to the booking page or contact us."}
+          </p>
+
+          <Link
+            to="/book"
+            className="btn-gold mt-8"
+          >
+            {lang === "el"
+              ? "Επιστροφή στην κράτηση"
+              : "Back to booking"}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-5xl px-5 py-16">
-      {state === "loading" && <p className="text-center text-muted-foreground">{lang === "el" ? "Επιβεβαίωση πληρωμής…" : "Confirming payment…"}</p>}
-      {state === "error" && (
-        <div className="panel p-10 text-center max-w-2xl mx-auto">
-          <p className="font-serif text-3xl">{lang === "el" ? "Η πληρωμή δεν επιβεβαιώθηκε" : "Payment not confirmed"}</p>
-          <p className="mt-4 text-muted-foreground">{lang === "el" ? "Δεν έγινε κράτηση. Δοκιμάστε ξανά ή επικοινωνήστε μαζί μας." : "No booking was made. Please try again or contact us."}</p>
-          <Link to="/book" className="btn-gold mt-8">{t.common.bookNow}</Link>
+    <div className="mx-auto max-w-3xl px-5 py-20">
+      <div className="panel p-8 md:p-12 text-center">
+        <CheckCircle2
+          className="mx-auto text-primary"
+          size={48}
+        />
+
+        <p className="eyebrow mt-5">
+          MM Home
+        </p>
+
+        <h1 className="font-serif text-4xl mt-2">
+          {lang === "el"
+            ? "Η κράτησή σας επιβεβαιώθηκε"
+            : "Your booking is confirmed"}
+        </h1>
+
+        <p className="mt-8 text-sm text-muted-foreground">
+          {lang === "el"
+            ? "Κωδικός κράτησης"
+            : "Booking code"}
+        </p>
+
+        <p className="font-serif text-4xl tracking-widest text-primary mt-1">
+          {state.code}
+        </p>
+
+        <div className="mt-8 space-y-2">
+          <p>
+            {fmtDate(
+              state.check_in,
+              lang
+            )}{" "}
+            →{" "}
+            {fmtDate(
+              state.check_out,
+              lang
+            )}
+          </p>
+
+          <p>
+            {state.guests}{" "}
+            {lang === "el"
+              ? "επισκέπτες"
+              : "guests"}{" "}
+            · €
+            {state.total}
+          </p>
+
+          <p className="text-sm text-muted-foreground">
+            {state.rate ===
+            "flexible"
+              ? lang ===
+                "el"
+                ? "Ευέλικτη τιμή"
+                : "Flexible rate"
+              : lang ===
+                "el"
+              ? "Μη επιστρέψιμη τιμή"
+              : "Non-refundable rate"}
+          </p>
         </div>
-      )}
-      {typeof state === "object" && (
-        <div className="panel p-10 text-center max-w-2xl mx-auto fade-up">
-          <p className="eyebrow">MM Home</p>
-          <h2 className="text-4xl mt-2">{t.book.doneT}</h2>
-          <p className="mt-6 text-sm text-muted-foreground">{t.book.code}</p>
-          <p className="font-serif text-4xl tracking-widest text-primary">{state.code}</p>
-          <p className="mt-6">{fmtDate(state.check_in, lang)} → {fmtDate(state.check_out, lang)} · {state.guests} {t.common.guests} · €{state.total}</p>
-          <p className="mt-6 text-muted-foreground">{t.book.doneNote}</p>
-          <div className="mt-6 text-left"><DepositNotice /></div>
-          <Link to="/my-booking" className="btn-line mt-8">{t.book.manage}</Link>
-        </div>
-      )}
+
+        <p className="mt-8 text-muted-foreground">
+          {lang === "el"
+            ? "Προσωπικό check-in από τις 15:00. Κατά την άφιξη θα ζητηθεί ταυτότητα ή διαβατήριο."
+            : "Personal check-in from 15:00. An ID card or passport will be requested on arrival."}
+        </p>
+
+        <Link
+          to="/"
+          className="btn-line mt-8"
+        >
+          {lang === "el"
+            ? "Αρχική"
+            : "Home"}
+        </Link>
+      </div>
     </div>
   );
 }
