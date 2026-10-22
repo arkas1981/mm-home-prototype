@@ -2,6 +2,10 @@ import { env } from "cloudflare:workers";
 import { getDB } from "./d1.server";
 
 import {
+  sendOwnerBookingEmail,
+} from "./booking-email.server";
+
+import {
   BASE_RATE,
   DEFAULT_MIN_NIGHTS,
   LEAD_DAYS,
@@ -33,6 +37,23 @@ type CheckoutInput = {
   terms: boolean;
   nonrefAck: boolean;
   expectedTotal: number;
+};
+
+type BookingRow = {
+  id: string;
+  code: string;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  rate: string;
+  total: number;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  stripe_session_id:
+    | string
+    | null;
 };
 
 const addDays = (
@@ -77,7 +98,8 @@ const nightsOf = (
   checkIn: string,
   checkOut: string
 ) => {
-  const dates: string[] = [];
+  const dates: string[] =
+    [];
 
   for (
     let d = checkIn;
@@ -138,8 +160,10 @@ function overrideFor(
     .find(
       (o) =>
         o[key] != null &&
-        date >= o.start_date &&
-        date <= o.end_date
+        date >=
+          o.start_date &&
+        date <=
+          o.end_date
     )?.[key];
 }
 
@@ -221,7 +245,8 @@ async function getCurrentQuote(
           BASE_RATE;
 
         const price =
-          rate === "flexible"
+          rate ===
+          "flexible"
             ? flexible
             : Math.round(
                 flexible *
@@ -421,7 +446,9 @@ async function getStripeSession(
       amount_total?:
         | number
         | null;
-      currency?: string | null;
+      currency?:
+        | string
+        | null;
       metadata?:
         Record<
           string,
@@ -443,6 +470,40 @@ async function getStripeSession(
   }
 
   return json;
+}
+
+async function notifyOwner(
+  booking: BookingRow
+) {
+  try {
+    await sendOwnerBookingEmail({
+      id:
+        booking.id,
+      code:
+        booking.code,
+      check_in:
+        booking.check_in,
+      check_out:
+        booking.check_out,
+      guests:
+        booking.guests,
+      name:
+        booking.name,
+      email:
+        booking.email,
+      phone:
+        booking.phone,
+      rate:
+        booking.rate,
+      total:
+        booking.total,
+    });
+  } catch (error) {
+    console.error(
+      "Owner booking email failed:",
+      error
+    );
+  }
 }
 
 export async function startCheckout(
@@ -674,7 +735,8 @@ export async function startCheckout(
 
         "line_items[0][price_data][unit_amount]":
           String(
-            quote.total * 100
+            quote.total *
+              100
           ),
 
         "line_items[0][price_data][product_data][name]":
@@ -710,7 +772,8 @@ export async function startCheckout(
         DELETE FROM bookings
         WHERE
           id = ?
-          AND status = 'pending'
+          AND status =
+            'pending'
       `)
       .bind(id)
       .run();
@@ -764,6 +827,8 @@ export async function confirmCheckout(
           rate,
           total,
           name,
+          email,
+          phone,
           status,
           stripe_session_id
         FROM bookings
@@ -772,20 +837,7 @@ export async function confirmCheckout(
       .bind(
         bookingId
       )
-      .first<{
-        id: string;
-        code: string;
-        check_in: string;
-        check_out: string;
-        guests: number;
-        rate: string;
-        total: number;
-        name: string;
-        status: string;
-        stripe_session_id:
-          | string
-          | null;
-      }>();
+      .first<BookingRow>();
 
   if (
     !booking ||
@@ -802,6 +854,10 @@ export async function confirmCheckout(
     booking.status ===
     "confirmed"
   ) {
+    await notifyOwner(
+      booking
+    );
+
     return {
       booking: {
         code:
@@ -848,17 +904,24 @@ export async function confirmCheckout(
     .prepare(`
       UPDATE bookings
       SET
-        status = 'confirmed',
-        payment_status = 'paid',
+        status =
+          'confirmed',
+        payment_status =
+          'paid',
         expires_at = NULL
       WHERE
         id = ?
-        AND status = 'pending'
+        AND status =
+          'pending'
     `)
     .bind(
       booking.id
     )
     .run();
+
+  await notifyOwner(
+    booking
+  );
 
   return {
     booking: {
