@@ -195,14 +195,25 @@ export default {
       cloudflareRequestEnv.run(
         env as WorkerEnv,
         async () => {
-          const {
-            runPreArrivalEmails,
-          } =
-            await import(
-              "./lib/prearrival-email.server"
-            );
+          const [
+            preArrivalModule,
+            postStayModule,
+          ] =
+            await Promise.all([
+              import(
+                "./lib/prearrival-email.server"
+              ),
 
-          await runPreArrivalEmails();
+              import(
+                "./lib/poststay-email.server"
+              ),
+            ]);
+
+          await preArrivalModule
+            .runPreArrivalEmails();
+
+          await postStayModule
+            .runPostStayEmails();
         }
       )
     );
