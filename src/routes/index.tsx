@@ -10,6 +10,7 @@ import {
 
 import {
   photos,
+  roomPhotos,
 } from "@/lib/photos";
 
 import {
@@ -21,6 +22,47 @@ const title =
 
 const description =
   "Πλήρως ανακαινισμένο διαμέρισμα 94 m² στο κέντρο των Τρικάλων, με 3 υπνοδωμάτια, έως 6 επισκέπτες, Fiber Wi-Fi και σύγχρονες παροχές.";
+
+function absoluteImageUrl(
+  src: string
+) {
+  if (
+    src.startsWith(
+      "http://"
+    ) ||
+    src.startsWith(
+      "https://"
+    )
+  ) {
+    return src;
+  }
+
+  return `https://mmhome.gr${
+    src.startsWith("/")
+      ? ""
+      : "/"
+  }${src}`;
+}
+
+const structuredImages = [
+  roomPhotos.living[0]?.src,
+  roomPhotos.living[1]?.src,
+  roomPhotos.master[0]?.src,
+  roomPhotos.master[1]?.src,
+  roomPhotos.bedroom2[0]?.src,
+  roomPhotos.bedroom3[0]?.src,
+  roomPhotos.kitchen[0]?.src,
+  roomPhotos.bathroom[0]?.src,
+  roomPhotos.front[0]?.src,
+  roomPhotos.rear[0]?.src,
+]
+  .filter(
+    (src): src is string =>
+      Boolean(src)
+  )
+  .map(
+    absoluteImageUrl
+  );
 
 const structuredData = {
   "@context":
@@ -43,24 +85,51 @@ const structuredData = {
 
   description,
 
+  image:
+    structuredImages,
+
+  telephone:
+    "+306984684411",
+
+  email:
+    "info@mmhome.gr",
+
   address: {
     "@type":
       "PostalAddress",
+
     streetAddress:
       "Ασκληπιού 44",
+
     addressLocality:
       "Τρίκαλα",
+
     addressRegion:
       "Θεσσαλία",
+
+    postalCode:
+      "42131",
+
     addressCountry:
       "GR",
   },
 
+  geo: {
+    "@type":
+      "GeoCoordinates",
+
+    latitude:
+      39.550449832990786,
+
+    longitude:
+      21.765204641597695,
+  },
+
   checkinTime:
-    "15:00:00+03:00",
+    "15:00:00",
 
   checkoutTime:
-    "11:00:00+03:00",
+    "11:00:00",
 
   knowsLanguage: [
     "el-GR",
@@ -77,13 +146,18 @@ const structuredData = {
     occupancy: {
       "@type":
         "QuantitativeValue",
-      value: 6,
+
+      value:
+        6,
     },
 
     floorSize: {
       "@type":
         "QuantitativeValue",
-      value: 94,
+
+      value:
+        94,
+
       unitCode:
         "MTK",
     },
@@ -98,16 +172,21 @@ const structuredData = {
       {
         "@type":
           "BedDetails",
+
         numberOfBeds:
           2,
+
         typeOfBed:
           "Queen",
       },
+
       {
         "@type":
           "BedDetails",
+
         numberOfBeds:
           1,
+
         typeOfBed:
           "Double",
       },
@@ -118,120 +197,164 @@ const structuredData = {
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "wifi",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "internetType",
+
       value:
         "Free",
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "kitchen",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "ac",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "heating",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "balcony",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "elevator",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "fireplace",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "microwave",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "ovenStove",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "tv",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "washerDryer",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "instantBookable",
+
       value:
         true,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "petsAllowed",
+
       value:
         false,
     },
+
     {
       "@type":
         "LocationFeatureSpecification",
+
       name:
         "smokingAllowed",
+
       value:
         false,
     },
@@ -349,20 +472,25 @@ function Home() {
           {
             src:
               photos.kitchen,
+
             alt:
               t.stay
                 .kitchenT,
           },
+
           {
             src:
               photos.dining,
+
             alt:
               t.stay
                 .diningT,
           },
+
           {
             src:
               photos.balcony,
+
             alt:
               t.stay
                 .frontT,
