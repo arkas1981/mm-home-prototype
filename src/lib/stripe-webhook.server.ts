@@ -1,5 +1,8 @@
 import { env } from "cloudflare:workers";
 import { getDB } from "./d1.server";
+import {
+  sendOwnerBookingEmail,
+} from "./booking-email.server";
 
 type StripeWebhookEnv = {
   STRIPE_WEBHOOK_SECRET?: string;
@@ -19,6 +22,23 @@ type StripeEvent = {
   data?: {
     object?: StripeCheckoutSession;
   };
+};
+
+type BookingRow = {
+  id: string;
+  code: string;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  name: string;
+  email: string;
+  phone: string;
+  rate: string;
+  total: number;
+  stripe_session_id:
+    | string
+    | null;
+  status: string;
 };
 
 const textEncoder =
@@ -181,6 +201,14 @@ async function confirmPaidSession(
       .prepare(`
         SELECT
           id,
+          code,
+          check_in,
+          check_out,
+          guests,
+          name,
+          email,
+          phone,
+          rate,
           total,
           stripe_session_id,
           status
@@ -189,14 +217,7 @@ async function confirmPaidSession(
         LIMIT 1
       `)
       .bind(bookingId)
-      .first<{
-        id: string;
-        total: number;
-        stripe_session_id:
-          | string
-          | null;
-        status: string;
-      }>();
+      .first<BookingRow>();
 
   if (!booking) {
     return;
@@ -217,28 +238,49 @@ async function confirmPaidSession(
   }
 
   if (
-    booking.status ===
+    booking.status !==
     "confirmed"
   ) {
-    return;
+    await db
+      .prepare(`
+        UPDATE bookings
+        SET
+          status = 'confirmed',
+          payment_status = 'paid',
+          expires_at = NULL
+        WHERE
+          id = ?
+          AND stripe_session_id = ?
+      `)
+      .bind(
+        booking.id,
+        sessionId
+      )
+      .run();
   }
 
-  await db
-    .prepare(`
-      UPDATE bookings
-      SET
-        status = 'confirmed',
-        payment_status = 'paid',
-        expires_at = NULL
-      WHERE
-        id = ?
-        AND stripe_session_id = ?
-    `)
-    .bind(
+  await sendOwnerBookingEmail({
+    id:
       booking.id,
-      sessionId
-    )
-    .run();
+    code:
+      booking.code,
+    check_in:
+      booking.check_in,
+    check_out:
+      booking.check_out,
+    guests:
+      booking.guests,
+    name:
+      booking.name,
+    email:
+      booking.email,
+    phone:
+      booking.phone,
+    rate:
+      booking.rate,
+    total:
+      booking.total,
+  });
 }
 
 export async function handleStripeWebhook(
