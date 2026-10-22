@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { getDB } from "./d1.server";
 
 import {
-  sendOwnerBookingEmail,
+  sendBookingConfirmationEmails,
 } from "./booking-email.server";
 
 import {
@@ -472,11 +472,11 @@ async function getStripeSession(
   return json;
 }
 
-async function notifyOwner(
+async function notifyBooking(
   booking: BookingRow
 ) {
   try {
-    await sendOwnerBookingEmail({
+    await sendBookingConfirmationEmails({
       id:
         booking.id,
       code:
@@ -500,7 +500,7 @@ async function notifyOwner(
     });
   } catch (error) {
     console.error(
-      "Owner booking email failed:",
+      "Booking confirmation email failed:",
       error
     );
   }
@@ -854,7 +854,7 @@ export async function confirmCheckout(
     booking.status ===
     "confirmed"
   ) {
-    await notifyOwner(
+    await notifyBooking(
       booking
     );
 
@@ -919,7 +919,7 @@ export async function confirmCheckout(
     )
     .run();
 
-  await notifyOwner(
+  await notifyBooking(
     booking
   );
 
