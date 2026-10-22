@@ -17,6 +17,14 @@ type ExistingReview = {
   id: string;
 };
 
+export type PublicReview = {
+  id: string;
+  name: string;
+  rating: number;
+  text: string;
+  created_at: string;
+};
+
 function todayAthens() {
   const parts =
     new Intl.DateTimeFormat(
@@ -85,6 +93,42 @@ async function ensureReviewsTable() {
     `)
     .run();
 }
+
+export const getApprovedReviews =
+  createServerFn({
+    method:
+      "GET",
+  }).handler(
+    async () => {
+      await ensureReviewsTable();
+
+      const db =
+        getDB();
+
+      const result =
+        await db
+          .prepare(`
+            SELECT
+              id,
+              name,
+              rating,
+              text,
+              created_at
+            FROM reviews
+            WHERE
+              status = 'approved'
+            ORDER BY
+              created_at DESC
+          `)
+          .all<PublicReview>();
+
+      return {
+        reviews:
+          result.results ??
+          [],
+      };
+    }
+  );
 
 export const getReviewBooking =
   createServerFn({
