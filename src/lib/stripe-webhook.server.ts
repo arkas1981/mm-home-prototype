@@ -1,7 +1,8 @@
 import { env } from "cloudflare:workers";
 import { getDB } from "./d1.server";
+
 import {
-  sendOwnerBookingEmail,
+  sendBookingConfirmationEmails,
 } from "./booking-email.server";
 
 type StripeWebhookEnv = {
@@ -259,7 +260,7 @@ async function confirmPaidSession(
       .run();
   }
 
-  await sendOwnerBookingEmail({
+  await sendBookingConfirmationEmails({
     id:
       booking.id,
     code:
