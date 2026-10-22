@@ -6,8 +6,8 @@ import { meta } from "@/lib/meta";
 export const Route = createFileRoute("/")({
   head: () =>
     meta(
-      "MM Home Τρίκαλα — Your Home Away From Home",
-      "Πολυτελές, ανακαινισμένο διαμέρισμα 94 m² στο κέντρο των Τρικάλων για έως 6 επισκέπτες."
+      "MM Home | Πολυτελές διαμέρισμα στο κέντρο των Τρικάλων",
+      "Πλήρως ανακαινισμένο διαμέρισμα 94 m² στο κέντρο των Τρικάλων, με 3 υπνοδωμάτια, έως 6 επισκέπτες, Fiber Wi-Fi και σύγχρονες παροχές."
     ),
   component: Home,
 });
@@ -20,7 +20,7 @@ function Home() {
       <section className="relative min-h-[620px] md:min-h-[660px] h-[78svh] overflow-hidden">
         <img
           src={photos.living}
-          alt="MM Home"
+          alt="MM Home πολυτελές διαμέρισμα στο κέντρο των Τρικάλων"
           width={1600}
           height={1008}
           className="absolute inset-0 h-full w-full object-cover"
@@ -30,7 +30,9 @@ function Home() {
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/40 to-transparent" />
 
         <div className="relative z-10 mx-auto max-w-7xl h-full px-5 flex flex-col justify-end pb-10 md:pb-16 text-background fade-up">
-          <p className="font-serif text-3xl">MM Home</p>
+          <p className="font-serif text-3xl">
+            MM Home
+          </p>
 
           <h1 className="mt-4 text-4xl md:text-6xl max-w-4xl leading-[1.08]">
             {t.home.headline}
@@ -49,7 +51,10 @@ function Home() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/book" className="btn-gold">
+            <Link
+              to="/book"
+              className="btn-gold"
+            >
               {t.common.bookNow}
             </Link>
 
@@ -65,9 +70,18 @@ function Home() {
 
       <section className="mx-auto max-w-7xl px-5 pt-6 md:pt-10 grid md:grid-cols-3 gap-4">
         {[
-          { src: photos.kitchen, alt: t.stay.kitchenT },
-          { src: photos.dining, alt: t.stay.diningT },
-          { src: photos.balcony, alt: t.stay.frontT },
+          {
+            src: photos.kitchen,
+            alt: t.stay.kitchenT,
+          },
+          {
+            src: photos.dining,
+            alt: t.stay.diningT,
+          },
+          {
+            src: photos.balcony,
+            alt: t.stay.frontT,
+          },
         ].map((p) => (
           <img
             key={p.alt}
@@ -96,7 +110,9 @@ function Home() {
 
       <section className="mx-auto max-w-7xl px-5 py-24 grid md:grid-cols-2 gap-12 items-center">
         <div>
-          <p className="eyebrow">{t.nav.location}</p>
+          <p className="eyebrow">
+            {t.nav.location}
+          </p>
 
           <h2 className="mt-3 text-4xl md:text-5xl">
             {t.home.walkTitle}
@@ -106,14 +122,17 @@ function Home() {
             {t.home.walk}
           </p>
 
-          <Link to="/location" className="btn-line mt-8">
+          <Link
+            to="/location"
+            className="btn-line mt-8"
+          >
             {t.nav.location}
           </Link>
         </div>
 
         <img
           src="/τρικαλα.jpg"
-          alt="Κέντρο Τρικάλων"
+          alt="Κέντρο Τρικάλων κοντά στο MM Home"
           loading="lazy"
           width={1408}
           height={1008}
