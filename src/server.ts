@@ -42,10 +42,10 @@ async function getServerEntry():
       import(
         "@tanstack/react-start/server-entry"
       ).then(
-        (m) =>
+        (module) =>
           (
-            m.default ??
-            m
+            module.default ??
+            module
           ) as ServerEntry
       );
   }
@@ -100,7 +100,8 @@ async function normalizeCatastrophicSsrResponse(
   return new Response(
     renderErrorPage(),
     {
-      status: 500,
+      status:
+        500,
 
       headers: {
         "content-type":
@@ -195,25 +196,14 @@ export default {
       cloudflareRequestEnv.run(
         env as WorkerEnv,
         async () => {
-          const [
-            preArrivalModule,
-            postStayModule,
-          ] =
-            await Promise.all([
-              import(
-                "./lib/prearrival-email.server"
-              ),
+          const {
+            runEmailFailSafe,
+          } =
+            await import(
+              "./lib/email-failsafe.server"
+            );
 
-              import(
-                "./lib/poststay-email.server"
-              ),
-            ]);
-
-          await preArrivalModule
-            .runPreArrivalEmails();
-
-          await postStayModule
-            .runPostStayEmails();
+          await runEmailFailSafe();
         }
       )
     );
