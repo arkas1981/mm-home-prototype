@@ -64,6 +64,7 @@ import {
 } from "@/lib/store";
 
 import { MonthCalendar } from "@/components/MonthCalendar";
+import { AdminReviews } from "@/components/AdminReviews";
 import { Logo } from "@/components/site";
 import { SLOGAN } from "@/lib/i18n";
 import { meta } from "@/lib/meta";
@@ -352,7 +353,7 @@ function Admin() {
 
               {tab ===
                 "reviews" && (
-                <ReviewsMod />
+                <AdminReviews />
               )}
 
               {tab ===
