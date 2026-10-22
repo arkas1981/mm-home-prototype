@@ -51,8 +51,8 @@ export const Route =
   )({
     head: () =>
       meta(
-        "Κράτηση — MM Home Τρίκαλα",
-        "Ελέγξτε διαθεσιμότητα και ολοκληρώστε την κράτησή σας στο MM Home."
+        "Κράτηση MM Home | Διαμονή στο κέντρο των Τρικάλων",
+        "Ελέγξτε διαθεσιμότητα, τιμές και ολοκληρώστε με ασφαλή online πληρωμή την κράτησή σας στο MM Home στα Τρίκαλα."
       ),
     component: Book,
   });
@@ -854,8 +854,8 @@ function Book() {
 
                 <p className="mt-3 text-xs text-center text-muted-foreground">
                   {isGreek
-                    ? "Δοκιμαστική λειτουργία Stripe — δεν πραγματοποιείται πραγματική χρέωση."
-                    : "Stripe test mode — no real charge will be made."}
+                    ? "Ασφαλής online πληρωμή μέσω Stripe."
+                    : "Secure online payment via Stripe."}
                 </p>
               </div>
             </>
