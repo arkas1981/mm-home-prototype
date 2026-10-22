@@ -64,44 +64,12 @@ function todayAthens() {
   return `${year}-${month}-${day}`;
 }
 
-async function ensureReviewsTable() {
-  const db =
-    getDB();
-
-  await db
-    .prepare(`
-      CREATE TABLE IF NOT EXISTS reviews (
-        id TEXT PRIMARY KEY,
-        booking_id TEXT NOT NULL UNIQUE,
-        booking_code TEXT NOT NULL,
-        name TEXT NOT NULL,
-        rating INTEGER NOT NULL,
-        text TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'pending',
-        created_at TEXT NOT NULL
-      )
-    `)
-    .run();
-
-  await db
-    .prepare(`
-      CREATE INDEX IF NOT EXISTS
-      idx_reviews_booking_code
-      ON reviews (
-        booking_code
-      )
-    `)
-    .run();
-}
-
 export const getApprovedReviews =
   createServerFn({
     method:
       "GET",
   }).handler(
     async () => {
-      await ensureReviewsTable();
-
       const db =
         getDB();
 
@@ -146,8 +114,6 @@ export const getReviewBooking =
       async ({
         data,
       }) => {
-        await ensureReviewsTable();
-
         const code =
           (
             data.code ??
@@ -266,8 +232,6 @@ export const submitReview =
       async ({
         data,
       }) => {
-        await ensureReviewsTable();
-
         const code =
           (
             data.code ??
