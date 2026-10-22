@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { getDB } from "./d1.server";
 
 import logoAsset from "@/assets/mmhome-logo.png";
-import heroAsset from "@/assets/living-primary.png";
+import heroAsset from "@/assets/prearrival-hero.png";
 
 type EmailEnv = {
   RESEND_API_KEY?: string;
@@ -308,43 +308,7 @@ function buildEmailHtml(
           "
         >
 
-          <!-- LOGO -->
-          <tr>
-            <td
-              align="center"
-              style="
-                padding:26px 20px 20px;
-                background:#fffdf9;
-              "
-            >
-              <img
-                src="${LOGO_URL}"
-                alt="MM Home"
-                width="120"
-                style="
-                  display:block;
-                  width:120px;
-                  max-width:120px;
-                  height:auto;
-                  border:0;
-                "
-              >
-
-              <div
-                style="
-                  margin-top:8px;
-                  font-family:Georgia,'Times New Roman',serif;
-                  font-size:14px;
-                  font-style:italic;
-                  color:#857565;
-                "
-              >
-                Your Home Away From Home
-              </div>
-            </td>
-          </tr>
-
-          <!-- HERO PHOTO -->
+          <!-- HERO PHOTO WITH LOGO -->
           <tr>
             <td
               style="
