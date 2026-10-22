@@ -1056,7 +1056,7 @@ function buildEmailHtml(
   `;
 }
 
-async function sendPreArrivalEmail(
+export async function sendPreArrivalEmail(
   booking: BookingRow
 ) {
   const claimed =
