@@ -18,8 +18,11 @@ type BookingRow = {
 const SITE_URL =
   "https://mmhome.gr";
 
-const HERO_URL =
+const HERO_IMAGE_URL =
   "https://mmhome.gr/prearrival-hero.png";
+
+const HERO_CONTENT_ID =
+  "mmhome-poststay-hero";
 
 function todayAthens() {
   const parts =
@@ -258,11 +261,11 @@ function buildEmailHtml(
           "
         >
 
-          <!-- HERO -->
+          <!-- INLINE HERO -->
           <tr>
             <td style="padding:0;">
               <img
-                src="${HERO_URL}"
+                src="cid:${HERO_CONTENT_ID}"
                 alt="MM Home"
                 width="640"
                 style="
@@ -345,7 +348,7 @@ function buildEmailHtml(
                 <tr>
                   <td
                     style="
-                      padding:22px 22px;
+                      padding:22px;
                       text-align:center;
                     "
                   >
@@ -662,6 +665,22 @@ export async function sendPostStayEmail(
                 `Ευχαριστούμε που μείνατε στο MM Home · ${booking.code}`,
 
               html,
+
+              attachments: [
+                {
+                  path:
+                    HERO_IMAGE_URL,
+
+                  filename:
+                    "mmhome-poststay.png",
+
+                  content_type:
+                    "image/png",
+
+                  content_id:
+                    HERO_CONTENT_ID,
+                },
+              ],
             }),
         }
       );
@@ -693,11 +712,6 @@ export async function sendPostStayEmail(
 }
 
 export async function runPostStayEmails() {
-  /*
-   * Check-out = 11:00.
-   * Send thank-you email
-   * approximately 3 hours later.
-   */
   if (
     currentAthensHour() !==
     14
