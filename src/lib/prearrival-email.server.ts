@@ -2,7 +2,6 @@ import { env } from "cloudflare:workers";
 import { getDB } from "./d1.server";
 
 import logoAsset from "@/assets/mmhome-logo.png";
-import heroAsset from "@/assets/prearrival-hero.png";
 
 type EmailEnv = {
   RESEND_API_KEY?: string;
@@ -25,7 +24,7 @@ const LOGO_URL =
   `${SITE_URL}${logoAsset.startsWith("/") ? "" : "/"}${logoAsset}`;
 
 const HERO_URL =
-  `${SITE_URL}${heroAsset.startsWith("/") ? "" : "/"}${heroAsset}`;
+  "https://mmhome.gr/prearrival-hero.png";
 
 const DIRECTIONS_URL =
   "https://www.google.com/maps/dir/?api=1&destination=39.550449832990786%2C21.765204641597695";
@@ -310,11 +309,7 @@ function buildEmailHtml(
 
           <!-- HERO PHOTO WITH LOGO -->
           <tr>
-            <td
-              style="
-                padding:0;
-              "
-            >
+            <td style="padding:0;">
               <img
                 src="${HERO_URL}"
                 alt="MM Home"
@@ -332,11 +327,7 @@ function buildEmailHtml(
 
           <!-- GREEK -->
           <tr>
-            <td
-              style="
-                padding:30px 28px 10px;
-              "
-            >
+            <td style="padding:30px 28px 10px;">
 
               <div
                 style="
@@ -374,7 +365,6 @@ function buildEmailHtml(
                 στα Τρίκαλα!
               </p>
 
-              <!-- BOOKING CARD -->
               <table
                 role="presentation"
                 width="100%"
@@ -389,11 +379,7 @@ function buildEmailHtml(
                 "
               >
                 <tr>
-                  <td
-                    style="
-                      padding:18px 20px;
-                    "
-                  >
+                  <td style="padding:18px 20px;">
                     <table
                       role="presentation"
                       width="100%"
@@ -442,9 +428,7 @@ function buildEmailHtml(
                             font-size:15px;
                           "
                         >
-                          <strong>
-                            ${checkInEl}
-                          </strong>
+                          <strong>${checkInEl}</strong>
                           <br>
                           <span
                             style="
@@ -475,9 +459,7 @@ function buildEmailHtml(
                             font-size:15px;
                           "
                         >
-                          <strong>
-                            ${checkOutEl}
-                          </strong>
+                          <strong>${checkOutEl}</strong>
                           <br>
                           <span
                             style="
@@ -517,7 +499,6 @@ function buildEmailHtml(
                 </tr>
               </table>
 
-              <!-- LOCATION -->
               <table
                 role="presentation"
                 width="100%"
@@ -546,29 +527,23 @@ function buildEmailHtml(
                       line-height:1.6;
                     "
                   >
-                    <strong>
-                      MM Home
-                    </strong>
+                    <strong>MM Home</strong>
                     <br>
                     Ασκληπιού 44, Τρίκαλα
                   </td>
                 </tr>
               </table>
 
-              <!-- DIRECTIONS BUTTON -->
               <table
                 role="presentation"
                 width="100%"
                 cellpadding="0"
                 cellspacing="0"
                 border="0"
-                style="
-                  margin:0 0 28px;
-                "
+                style="margin:0 0 28px;"
               >
                 <tr>
                   <td align="center">
-
                     <table
                       role="presentation"
                       cellpadding="0"
@@ -578,9 +553,7 @@ function buildEmailHtml(
                       <tr>
                         <td
                           bgcolor="#8a642f"
-                          style="
-                            border-radius:8px;
-                          "
+                          style="border-radius:8px;"
                         >
                           <a
                             href="${DIRECTIONS_URL}"
@@ -600,12 +573,10 @@ function buildEmailHtml(
                         </td>
                       </tr>
                     </table>
-
                   </td>
                 </tr>
               </table>
 
-              <!-- INFO BOX -->
               <table
                 role="presentation"
                 width="100%"
@@ -619,7 +590,6 @@ function buildEmailHtml(
                   margin-bottom:24px;
                 "
               >
-
                 <tr>
                   <td
                     style="
@@ -666,9 +636,7 @@ function buildEmailHtml(
                     Καθώς το check-in πραγματοποιείται
                     προσωπικά, θα μας βοηθούσε να μας
                     ενημερώσετε για την
-                    <strong>
-                      περίπου ώρα άφιξής σας
-                    </strong>,
+                    <strong>περίπου ώρα άφιξής σας</strong>,
                     ώστε να είμαστε έτοιμοι να σας
                     υποδεχτούμε.
                   </td>
@@ -701,7 +669,6 @@ function buildEmailHtml(
                 </tr>
               </table>
 
-              <!-- CONTACT -->
               <table
                 role="presentation"
                 width="100%"
@@ -723,9 +690,7 @@ function buildEmailHtml(
                       line-height:1.7;
                     "
                   >
-                    <strong>
-                      Τηλέφωνο / Viber
-                    </strong>
+                    <strong>Τηλέφωνο / Viber</strong>
                     <br>
                     +30 698 468 4411
                   </td>
@@ -737,16 +702,11 @@ function buildEmailHtml(
                       line-height:1.7;
                     "
                   >
-                    <strong>
-                      Email
-                    </strong>
+                    <strong>Email</strong>
                     <br>
-
                     <a
                       href="mailto:info@mmhome.gr"
-                      style="
-                        color:#8a642f;
-                      "
+                      style="color:#8a642f;"
                     >
                       info@mmhome.gr
                     </a>
@@ -769,13 +729,8 @@ function buildEmailHtml(
             </td>
           </tr>
 
-          <!-- DIVIDER -->
           <tr>
-            <td
-              style="
-                padding:10px 28px;
-              "
-            >
+            <td style="padding:10px 28px;">
               <div
                 style="
                   border-top:1px solid #ded4c7;
@@ -786,11 +741,7 @@ function buildEmailHtml(
 
           <!-- ENGLISH -->
           <tr>
-            <td
-              style="
-                padding:20px 28px 34px;
-              "
-            >
+            <td style="padding:20px 28px 34px;">
 
               <div
                 style="
@@ -846,22 +797,16 @@ function buildEmailHtml(
                       line-height:1.8;
                     "
                   >
-                    <strong>
-                      Booking code:
-                    </strong>
+                    <strong>Booking code:</strong>
                     ${code}
                     <br>
 
-                    <strong>
-                      Check-in:
-                    </strong>
+                    <strong>Check-in:</strong>
                     ${checkInEn}
                     — from 15:00
                     <br>
 
-                    <strong>
-                      Check-out:
-                    </strong>
+                    <strong>Check-out:</strong>
                     ${checkOutEn}
                     — by 11:00
                   </td>
@@ -874,9 +819,7 @@ function buildEmailHtml(
                 cellpadding="0"
                 cellspacing="0"
                 border="0"
-                style="
-                  margin:24px 0;
-                "
+                style="margin:24px 0;"
               >
                 <tr>
                   <td align="center">
@@ -889,9 +832,7 @@ function buildEmailHtml(
                       <tr>
                         <td
                           bgcolor="#8a642f"
-                          style="
-                            border-radius:8px;
-                          "
+                          style="border-radius:8px;"
                         >
                           <a
                             href="${DIRECTIONS_URL}"
@@ -932,9 +873,7 @@ function buildEmailHtml(
               >
                 As check-in is personal, please let
                 us know your
-                <strong>
-                  approximate arrival time
-                </strong>
+                <strong>approximate arrival time</strong>
                 so that we can be ready to welcome you.
               </p>
 
