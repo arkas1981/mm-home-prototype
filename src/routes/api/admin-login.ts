@@ -7,6 +7,8 @@ import {
 } from "cloudflare:workers";
 
 import {
+  deleteCookie,
+  getCookie,
   setCookie,
 } from "@tanstack/react-start/server";
 
@@ -51,6 +53,74 @@ function bytesToBase64Url(
     );
 }
 
+function base64UrlToBytes(
+  value: string
+) {
+  const normal =
+    value
+      .replace(
+        /-/g,
+        "+"
+      )
+      .replace(
+        /_/g,
+        "/"
+      );
+
+  const padded =
+    normal +
+    "=".repeat(
+      (
+        4 -
+        (
+          normal.length %
+          4
+        )
+      ) %
+        4
+    );
+
+  const binary =
+    atob(
+      padded
+    );
+
+  return Uint8Array.from(
+    binary,
+    (c) =>
+      c.charCodeAt(
+        0
+      )
+  );
+}
+
+async function getHmacKey(
+  secret: string
+) {
+  return crypto.subtle.importKey(
+    "raw",
+
+    new TextEncoder().encode(
+      secret
+    ),
+
+    {
+      name:
+        "HMAC",
+
+      hash:
+        "SHA-256",
+    },
+
+    false,
+
+    [
+      "sign",
+      "verify",
+    ]
+  );
+}
+
 async function createSessionToken(
   secret: string
 ) {
@@ -75,26 +145,8 @@ async function createSessionToken(
     );
 
   const key =
-    await crypto.subtle.importKey(
-      "raw",
-
-      new TextEncoder().encode(
-        secret
-      ),
-
-      {
-        name:
-          "HMAC",
-
-        hash:
-          "SHA-256",
-      },
-
-      false,
-
-      [
-        "sign",
-      ]
+    await getHmacKey(
+      secret
     );
 
   const signature =
@@ -115,12 +167,169 @@ async function createSessionToken(
   )}`;
 }
 
+async function verifySessionToken(
+  token:
+    | string
+    | undefined,
+  secret: string
+) {
+  if (!token) {
+    return false;
+  }
+
+  const [
+    payloadEncoded,
+    signatureEncoded,
+  ] =
+    token.split(
+      "."
+    );
+
+  if (
+    !payloadEncoded ||
+    !signatureEncoded
+  ) {
+    return false;
+  }
+
+  try {
+    const key =
+      await getHmacKey(
+        secret
+      );
+
+    const valid =
+      await crypto.subtle.verify(
+        "HMAC",
+
+        key,
+
+        base64UrlToBytes(
+          signatureEncoded
+        ),
+
+        new TextEncoder().encode(
+          payloadEncoded
+        )
+      );
+
+    if (!valid) {
+      return false;
+    }
+
+    const payload =
+      JSON.parse(
+        new TextDecoder().decode(
+          base64UrlToBytes(
+            payloadEncoded
+          )
+        )
+      ) as {
+        role?: string;
+        exp?: number;
+      };
+
+    return (
+      payload.role ===
+        "admin" &&
+      typeof payload.exp ===
+        "number" &&
+      payload.exp >
+        Math.floor(
+          Date.now() /
+            1000
+        )
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getAdminEnv() {
+  return env as unknown as AdminEnv;
+}
+
 export const Route =
   createFileRoute(
     "/api/admin-login"
   )({
     server: {
       handlers: {
+        GET:
+          async () => {
+            try {
+              const e =
+                getAdminEnv();
+
+              if (
+                !e.ADMIN_SESSION_SECRET ||
+                e.ADMIN_SESSION_SECRET
+                  .length <
+                  32
+              ) {
+                return Response.json(
+                  {
+                    authenticated:
+                      false,
+                  },
+
+                  {
+                    headers: {
+                      "cache-control":
+                        "no-store",
+                    },
+                  }
+                );
+              }
+
+              const authenticated =
+                await verifySessionToken(
+                  getCookie(
+                    COOKIE_NAME
+                  ),
+
+                  e.ADMIN_SESSION_SECRET
+                );
+
+              return Response.json(
+                {
+                  authenticated,
+                },
+
+                {
+                  headers: {
+                    "cache-control":
+                      "no-store",
+                  },
+                }
+              );
+            } catch (
+              error
+            ) {
+              console.error(
+                "Admin session API error:",
+                error
+              );
+
+              return Response.json(
+                {
+                  authenticated:
+                    false,
+                },
+
+                {
+                  status:
+                    500,
+
+                  headers: {
+                    "cache-control":
+                      "no-store",
+                  },
+                }
+              );
+            }
+          },
+
         POST:
           async ({
             request,
@@ -133,7 +342,7 @@ export const Route =
                 };
 
               const e =
-                env as unknown as AdminEnv;
+                getAdminEnv();
 
               if (
                 !e.ADMIN_EMAIL ||
@@ -249,6 +458,58 @@ export const Route =
 
                   error:
                     "server",
+                },
+
+                {
+                  status:
+                    500,
+                  }
+                );
+            }
+          },
+
+        DELETE:
+          async () => {
+            try {
+              deleteCookie(
+                COOKIE_NAME,
+                {
+                  secure:
+                    true,
+
+                  sameSite:
+                    "strict",
+
+                  path:
+                    "/",
+                }
+              );
+
+              return Response.json(
+                {
+                  ok:
+                    true,
+                },
+
+                {
+                  headers: {
+                    "cache-control":
+                      "no-store",
+                  },
+                }
+              );
+            } catch (
+              error
+            ) {
+              console.error(
+                "Admin logout API error:",
+                error
+              );
+
+              return Response.json(
+                {
+                  ok:
+                    false,
                 },
 
                 {
