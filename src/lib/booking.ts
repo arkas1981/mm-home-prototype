@@ -22,11 +22,6 @@ export interface Booking {
 
   guests: number;
 
-  /*
-   * Detailed guest information.
-   * Older bookings may not have
-   * these values.
-   */
   adults?: number;
   childAges?: number[];
 
@@ -37,9 +32,6 @@ export interface Booking {
   rate: RateType;
   total: number;
 
-  /*
-   * Manual booking details.
-   */
   nightlyPrices?: NightlyPrice[];
   depositAmount?: number;
   notes?: string;
@@ -283,20 +275,24 @@ export function quote(
 }
 
 /*
- * IMPORTANT MM HOME RULE
+ * MM HOME AVAILABILITY RULE
  *
- * The checkout date is also
- * unavailable for a new check-in.
+ * Checkout date is available
+ * for a new guest check-in.
  *
  * Example:
+ *
  * Existing booking:
  * 18 -> 20 October
  *
- * Unavailable for new arrival:
- * 18, 19 and 20 October
+ * Occupied nights:
+ * 18 and 19 October
  *
- * Next possible arrival:
- * 21 October
+ * Checkout:
+ * 20 October at 11:00
+ *
+ * New guest may check in:
+ * 20 October at 15:00
  */
 export function nightTaken(
   date: string,
@@ -313,7 +309,7 @@ export function nightTaken(
           "confirmed" &&
         date >=
           b.checkIn &&
-        date <=
+        date <
           b.checkOut
     )
   ) {
@@ -379,13 +375,20 @@ export function validateStay(
     return "min";
   }
 
-  const datesToCheck = [
-    ...nightsOf(
+  /*
+   * Only the actual nights are
+   * checked.
+   *
+   * The checkout date itself is
+   * intentionally NOT checked,
+   * because another guest may
+   * arrive that same afternoon.
+   */
+  const datesToCheck =
+    nightsOf(
       ci,
       co
-    ),
-    co,
-  ];
+    );
 
   if (
     datesToCheck.some(
