@@ -267,6 +267,26 @@ async function getCurrentQuote(
   };
 }
 
+/*
+ * MM HOME AVAILABILITY RULE
+ *
+ * Checkout date is available
+ * for a new guest check-in.
+ *
+ * Example:
+ *
+ * Existing booking:
+ * 18 -> 20 October
+ *
+ * Occupied nights:
+ * 18 and 19 October
+ *
+ * Checkout:
+ * 20 October at 11:00
+ *
+ * New guest may check in:
+ * 20 October at 15:00
+ */
 async function datesTaken(
   checkIn: string,
   checkOut: string
@@ -287,6 +307,17 @@ async function datesTaken(
     .bind(now)
     .run();
 
+  /*
+   * Two bookings overlap only if:
+   *
+   * existing check-in < new check-out
+   * AND
+   * existing check-out > new check-in
+   *
+   * So:
+   * existing checkout = new check-in
+   * is allowed.
+   */
   const booking =
     await db
       .prepare(`
@@ -305,8 +336,8 @@ async function datesTaken(
               AND expires_at > ?
             )
           )
-          AND check_in <= ?
-          AND check_out >= ?
+          AND check_in < ?
+          AND check_out > ?
         LIMIT 1
       `)
       .bind(
