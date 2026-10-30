@@ -198,13 +198,22 @@ function quote(
 }
 
 /*
- * MM Home rule:
+ * MM HOME AVAILABILITY RULE
  *
- * Booking 18 -> 20
- * makes 18, 19 and 20 unavailable
- * for a new check-in.
+ * Checkout date is available
+ * for a new guest check-in.
  *
- * Next arrival = 21.
+ * Example:
+ * Existing booking: 18 -> 20
+ *
+ * Occupied nights:
+ * 18 and 19
+ *
+ * Checkout:
+ * 20 at 11:00
+ *
+ * New guest may check in:
+ * 20 at 15:00
  */
 async function datesTaken(
   checkIn: string,
@@ -216,6 +225,17 @@ async function datesTaken(
   const now =
     new Date().toISOString();
 
+  /*
+   * Two stays overlap only when:
+   *
+   * existing check-in < new check-out
+   * AND
+   * existing check-out > new check-in
+   *
+   * Therefore:
+   * existing checkout = new check-in
+   * is allowed.
+   */
   const booking = await db
     .prepare(`
       SELECT id
@@ -234,8 +254,8 @@ async function datesTaken(
             AND expires_at > ?
           )
         )
-        AND check_in <= ?
-        AND check_out >= ?
+        AND check_in < ?
+        AND check_out > ?
         ${
           ignoreBookingId
             ? "AND id != ?"
@@ -352,10 +372,6 @@ type ManualBookingInput = {
   depositAmount?: number;
   notes?: string;
 
-  /*
-   * Kept temporarily for compatibility
-   * with the current admin form.
-   */
   guests?: number;
 };
 
