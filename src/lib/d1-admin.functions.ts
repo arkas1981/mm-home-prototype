@@ -55,6 +55,25 @@ type NightlyPriceInput = {
   price: number;
 };
 
+type ManualBookingInput = {
+  checkIn: string;
+  checkOut: string;
+
+  name: string;
+  email: string;
+  phone: string;
+
+  rate: RateType;
+
+  adults: number;
+  childAges: number[];
+
+  nightlyPrices: NightlyPriceInput[];
+
+  depositAmount: number;
+  notes: string;
+};
+
 async function requireAdmin() {
   const {
     requireAdminSession,
@@ -163,58 +182,6 @@ function priceForDate(
   );
 }
 
-function quote(
-  ci: string,
-  co: string,
-  rate: RateType,
-  overrides: OverrideRow[]
-) {
-  const prices =
-    nightsOf(
-      ci,
-      co
-    ).map((date) => {
-      const flex =
-        priceForDate(
-          date,
-          overrides
-        );
-
-      return rate ===
-        "flexible"
-        ? flex
-        : Math.round(
-            flex *
-              (1 -
-                NONREF_DISCOUNT)
-          );
-    });
-
-  return prices.reduce(
-    (sum, value) =>
-      sum + value,
-    0
-  );
-}
-
-/*
- * MM HOME AVAILABILITY RULE
- *
- * Checkout date is available
- * for a new guest check-in.
- *
- * Example:
- * Existing booking: 18 -> 20
- *
- * Occupied nights:
- * 18 and 19
- *
- * Checkout:
- * 20 at 11:00
- *
- * New guest may check in:
- * 20 at 15:00
- */
 async function datesTaken(
   checkIn: string,
   checkOut: string,
@@ -226,15 +193,15 @@ async function datesTaken(
     new Date().toISOString();
 
   /*
-   * Two stays overlap only when:
+   * Same-day turnover is allowed.
    *
-   * existing check-in < new check-out
-   * AND
-   * existing check-out > new check-in
+   * Existing:
+   * 18 -> 20
    *
-   * Therefore:
-   * existing checkout = new check-in
-   * is allowed.
+   * New:
+   * 20 -> 22
+   *
+   * These do NOT overlap.
    */
   const booking = await db
     .prepare(`
@@ -249,8 +216,7 @@ async function datesTaken(
           status = 'confirmed'
           OR (
             status = 'pending'
-            AND expires_at
-              IS NOT NULL
+            AND expires_at IS NOT NULL
             AND expires_at > ?
           )
         )
@@ -299,6 +265,138 @@ async function datesTaken(
   return !!block;
 }
 
+function normalizeAdults(
+  value: number
+) {
+  const adults =
+    Math.floor(
+      Number(value)
+    );
+
+  if (
+    !Number.isFinite(adults) ||
+    adults < 1
+  ) {
+    return null;
+  }
+
+  return adults;
+}
+
+function normalizeChildAges(
+  values: number[]
+) {
+  if (!Array.isArray(values)) {
+    return null;
+  }
+
+  const result =
+    values.map((age) =>
+      Math.floor(
+        Number(age)
+      )
+    );
+
+  if (
+    result.some(
+      (age) =>
+        !Number.isFinite(age) ||
+        age < 0 ||
+        age > 17
+    )
+  ) {
+    return null;
+  }
+
+  return result;
+}
+
+function normalizeNightlyPrices(
+  checkIn: string,
+  checkOut: string,
+  values: NightlyPriceInput[]
+) {
+  const dates =
+    nightsOf(
+      checkIn,
+      checkOut
+    );
+
+  if (
+    !Array.isArray(values) ||
+    values.length !==
+      dates.length
+  ) {
+    return null;
+  }
+
+  const prices =
+    values.map(
+      (item) => ({
+        date:
+          item.date,
+
+        price:
+          Math.round(
+            Number(
+              item.price
+            )
+          ),
+      })
+    );
+
+  const valid =
+    dates.every(
+      (date, index) =>
+        prices[index]
+          ?.date === date &&
+        Number.isFinite(
+          prices[index]
+            ?.price
+        ) &&
+        (
+          prices[index]
+            ?.price ??
+          -1
+        ) >= 0
+    );
+
+  return valid
+    ? prices
+    : null;
+}
+
+function normalizeDeposit(
+  value: number,
+  total: number
+) {
+  const deposit =
+    Math.round(
+      Number(value)
+    );
+
+  if (
+    !Number.isFinite(
+      deposit
+    ) ||
+    deposit < 0 ||
+    deposit > total
+  ) {
+    return null;
+  }
+
+  return deposit;
+}
+
+function normalizeRate(
+  rate: RateType
+) {
+  return (
+    rate === "flexible" ||
+    rate === "nonref"
+  );
+}
+
 /* ADMIN DATA */
 
 export const adminDataD1 =
@@ -343,37 +441,18 @@ export const adminDataD1 =
       bookings:
         bookings.results ??
         [],
+
       blocks:
         blocks.results ??
         [],
+
       overrides:
         overrides.results ??
         [],
     };
   });
 
-/* MANUAL BOOKING */
-
-type ManualBookingInput = {
-  checkIn: string;
-  checkOut: string;
-
-  name: string;
-  email: string;
-  phone: string;
-
-  rate: RateType;
-
-  adults?: number;
-  childAges?: number[];
-
-  nightlyPrices?: NightlyPriceInput[];
-
-  depositAmount?: number;
-  notes?: string;
-
-  guests?: number;
-};
+/* MANUAL BOOKING CREATE */
 
 export const adminCreateBookingD1 =
   createServerFn({
@@ -401,6 +480,17 @@ export const adminCreateBookingD1 =
         }
 
         if (
+          !normalizeRate(
+            data.rate
+          )
+        ) {
+          return {
+            error:
+              "invalid" as const,
+          };
+        }
+
+        if (
           await datesTaken(
             data.checkIn,
             data.checkOut
@@ -412,50 +502,13 @@ export const adminCreateBookingD1 =
           };
         }
 
-        const dates =
-          nightsOf(
-            data.checkIn,
-            data.checkOut
-          );
-
         const adults =
-          Math.max(
-            1,
-            Math.floor(
-              Number(
-                data.adults ??
-                  data.guests ??
-                  1
-              )
-            )
+          normalizeAdults(
+            data.adults
           );
-
-        const childAges =
-          (
-            data.childAges ??
-            []
-          )
-            .map((age) =>
-              Math.floor(
-                Number(age)
-              )
-            )
-            .filter(
-              (age) =>
-                Number.isFinite(
-                  age
-                ) &&
-                age >= 0 &&
-                age <= 17
-            );
-
-        const guests =
-          adults +
-          childAges.length;
 
         if (
-          guests < 1 ||
-          guests > 6
+          adults === null
         ) {
           return {
             error:
@@ -463,88 +516,43 @@ export const adminCreateBookingD1 =
           };
         }
 
-        const db =
-          getDB();
-
-        const overrides =
-          await loadOverrides();
-
-        let nightlyPrices:
-          NightlyPriceInput[];
+        const childAges =
+          normalizeChildAges(
+            data.childAges
+          );
 
         if (
-          data.nightlyPrices &&
-          data.nightlyPrices.length >
-            0
+          childAges === null
         ) {
-          const incoming =
-            data.nightlyPrices.map(
-              (item) => ({
-                date:
-                  item.date,
-                price:
-                  Math.round(
-                    Number(
-                      item.price
-                    )
-                  ),
-              })
-            );
+          return {
+            error:
+              "guests" as const,
+          };
+        }
 
-          const valid =
-            incoming.length ===
-              dates.length &&
-            dates.every(
-              (date, index) =>
-                incoming[index]
-                  ?.date ===
-                  date &&
-                Number.isFinite(
-                  incoming[index]
-                    ?.price
-                ) &&
-                (
-                  incoming[index]
-                    ?.price ??
-                  0
-                ) >= 0
-            );
+        /*
+         * No maximum guest limit
+         * for manual bookings.
+         */
+        const guests =
+          adults +
+          childAges.length;
 
-          if (!valid) {
-            return {
-              error:
-                "prices" as const,
-            };
-          }
+        const nightlyPrices =
+          normalizeNightlyPrices(
+            data.checkIn,
+            data.checkOut,
+            data.nightlyPrices
+          );
 
-          nightlyPrices =
-            incoming;
-        } else {
-          nightlyPrices =
-            dates.map(
-              (date) => {
-                const flex =
-                  priceForDate(
-                    date,
-                    overrides
-                  );
-
-                const price =
-                  data.rate ===
-                  "flexible"
-                    ? flex
-                    : Math.round(
-                        flex *
-                          (1 -
-                            NONREF_DISCOUNT)
-                      );
-
-                return {
-                  date,
-                  price,
-                };
-              }
-            );
+        if (
+          nightlyPrices ===
+          null
+        ) {
+          return {
+            error:
+              "prices" as const,
+          };
         }
 
         const total =
@@ -556,29 +564,23 @@ export const adminCreateBookingD1 =
           );
 
         const depositAmount =
-          Math.max(
-            0,
-            Math.min(
-              total,
-              Math.round(
-                Number(
-                  data.depositAmount ??
-                    0
-                )
-              )
-            )
+          normalizeDeposit(
+            data.depositAmount,
+            total
           );
 
-        const notes =
-          (
-            data.notes ??
-            ""
-          )
-            .trim()
-            .slice(
-              0,
-              2000
-            );
+        if (
+          depositAmount ===
+          null
+        ) {
+          return {
+            error:
+              "deposit" as const,
+          };
+        }
+
+        const db =
+          getDB();
 
         await db
           .prepare(`
@@ -632,7 +634,16 @@ export const adminCreateBookingD1 =
             ),
 
             depositAmount,
-            notes,
+
+            (
+              data.notes ??
+              ""
+            )
+              .trim()
+              .slice(
+                0,
+                2000
+              ),
 
             data.name
               .trim()
@@ -663,7 +674,253 @@ export const adminCreateBookingD1 =
           .run();
 
         return {
-          ok: true as const,
+          ok:
+            true as const,
+        };
+      }
+    );
+
+/* MANUAL BOOKING UPDATE */
+
+type ManualBookingUpdateInput =
+  ManualBookingInput & {
+    id: string;
+  };
+
+export const adminUpdateBookingD1 =
+  createServerFn({
+    method: "POST",
+  })
+    .inputValidator(
+      (
+        d: ManualBookingUpdateInput
+      ) => d
+    )
+    .handler(
+      async ({ data }) => {
+        await requireAdmin();
+
+        const db =
+          getDB();
+
+        const existing =
+          await db
+            .prepare(`
+              SELECT
+                id,
+                source
+              FROM bookings
+              WHERE id = ?
+              LIMIT 1
+            `)
+            .bind(
+              data.id
+            )
+            .first<{
+              id: string;
+              source: string;
+            }>();
+
+        if (
+          !existing ||
+          existing.source !==
+            "manual"
+        ) {
+          return {
+            error:
+              "not_manual" as const,
+          };
+        }
+
+        if (
+          !data.checkIn ||
+          !data.checkOut ||
+          data.checkOut <=
+            data.checkIn
+        ) {
+          return {
+            error:
+              "order" as const,
+          };
+        }
+
+        if (
+          !normalizeRate(
+            data.rate
+          )
+        ) {
+          return {
+            error:
+              "invalid" as const,
+          };
+        }
+
+        if (
+          await datesTaken(
+            data.checkIn,
+            data.checkOut,
+            data.id
+          )
+        ) {
+          return {
+            error:
+              "taken" as const,
+          };
+        }
+
+        const adults =
+          normalizeAdults(
+            data.adults
+          );
+
+        if (
+          adults === null
+        ) {
+          return {
+            error:
+              "guests" as const,
+          };
+        }
+
+        const childAges =
+          normalizeChildAges(
+            data.childAges
+          );
+
+        if (
+          childAges === null
+        ) {
+          return {
+            error:
+              "guests" as const,
+          };
+        }
+
+        const guests =
+          adults +
+          childAges.length;
+
+        const nightlyPrices =
+          normalizeNightlyPrices(
+            data.checkIn,
+            data.checkOut,
+            data.nightlyPrices
+          );
+
+        if (
+          nightlyPrices ===
+          null
+        ) {
+          return {
+            error:
+              "prices" as const,
+          };
+        }
+
+        const total =
+          nightlyPrices.reduce(
+            (sum, item) =>
+              sum +
+              item.price,
+            0
+          );
+
+        const depositAmount =
+          normalizeDeposit(
+            data.depositAmount,
+            total
+          );
+
+        if (
+          depositAmount ===
+          null
+        ) {
+          return {
+            error:
+              "deposit" as const,
+          };
+        }
+
+        await db
+          .prepare(`
+            UPDATE bookings
+            SET
+              check_in = ?,
+              check_out = ?,
+              guests = ?,
+              adults = ?,
+              child_ages = ?,
+              nightly_prices = ?,
+              deposit_amount = ?,
+              notes = ?,
+              name = ?,
+              email = ?,
+              phone = ?,
+              rate = ?,
+              total = ?
+            WHERE
+              id = ?
+              AND source =
+                'manual'
+          `)
+          .bind(
+            data.checkIn,
+            data.checkOut,
+
+            guests,
+            adults,
+
+            JSON.stringify(
+              childAges
+            ),
+
+            JSON.stringify(
+              nightlyPrices
+            ),
+
+            depositAmount,
+
+            (
+              data.notes ??
+              ""
+            )
+              .trim()
+              .slice(
+                0,
+                2000
+              ),
+
+            data.name
+              .trim()
+              .slice(
+                0,
+                100
+              ),
+
+            data.email
+              .trim()
+              .toLowerCase()
+              .slice(
+                0,
+                255
+              ),
+
+            data.phone
+              .trim()
+              .slice(
+                0,
+                30
+              ),
+
+            data.rate,
+            total,
+            data.id
+          )
+          .run();
+
+        return {
+          ok:
+            true as const,
         };
       }
     );
@@ -699,7 +956,9 @@ export const adminSetBookingStatusD1 =
               FROM bookings
               WHERE id = ?
             `)
-            .bind(data.id)
+            .bind(
+              data.id
+            )
             .first<{
               id: string;
               check_in: string;
@@ -741,7 +1000,9 @@ export const adminSetBookingStatusD1 =
                   NULL
               WHERE id = ?
             `)
-            .bind(data.id)
+            .bind(
+              data.id
+            )
             .run();
         } else {
           await db
@@ -753,12 +1014,15 @@ export const adminSetBookingStatusD1 =
                 refund = 0
               WHERE id = ?
             `)
-            .bind(data.id)
+            .bind(
+              data.id
+            )
             .run();
         }
 
         return {
-          ok: true as const,
+          ok:
+            true as const,
         };
       }
     );
@@ -815,12 +1079,15 @@ export const adminAddBlockD1 =
               end_date,
               reason
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (
+              ?, ?, ?, ?
+            )
           `)
           .bind(
             genId(),
             data.start,
             data.end,
+
             data.reason
               .trim() ||
               "Blocked"
@@ -828,7 +1095,8 @@ export const adminAddBlockD1 =
           .run();
 
         return {
-          ok: true as const,
+          ok:
+            true as const,
         };
       }
     );
@@ -854,11 +1122,14 @@ export const adminRemoveBlockD1 =
             DELETE FROM blocks
             WHERE id = ?
           `)
-          .bind(data.id)
+          .bind(
+            data.id
+          )
           .run();
 
         return {
-          ok: true as const,
+          ok:
+            true as const,
         };
       }
     );
@@ -887,8 +1158,10 @@ export const adminAddOverrideD1 =
           !data.end ||
           data.end <
             data.start ||
-          (!data.price &&
-            !data.minNights)
+          (
+            !data.price &&
+            !data.minNights
+          )
         ) {
           return {
             error:
@@ -915,8 +1188,10 @@ export const adminAddOverrideD1 =
           `)
           .bind(
             genId(),
+
             data.start,
             data.end,
+
             data.price
               ? Math.max(
                   1,
@@ -925,6 +1200,7 @@ export const adminAddOverrideD1 =
                   )
                 )
               : null,
+
             data.minNights
               ? Math.max(
                   1,
@@ -933,8 +1209,10 @@ export const adminAddOverrideD1 =
                   )
                 )
               : null,
+
             (
-              data.label ?? ""
+              data.label ??
+              ""
             ).slice(
               0,
               100
@@ -943,7 +1221,8 @@ export const adminAddOverrideD1 =
           .run();
 
         return {
-          ok: true as const,
+          ok:
+            true as const,
         };
       }
     );
@@ -970,11 +1249,14 @@ export const adminRemoveOverrideD1 =
               price_overrides
             WHERE id = ?
           `)
-          .bind(data.id)
+          .bind(
+            data.id
+          )
           .run();
 
         return {
-          ok: true as const,
+          ok:
+            true as const,
         };
       }
     );
