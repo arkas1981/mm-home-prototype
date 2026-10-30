@@ -1029,8 +1029,8 @@ function AdminCalendar({
           "text-foreground",
 
         style: {
-          backgroundColor:
-            colour,
+          background:
+            `linear-gradient(90deg, transparent 0%, transparent 50%, ${colour} 50%, ${colour} 100%)`,
         },
 
         mark:
