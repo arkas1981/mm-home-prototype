@@ -892,30 +892,91 @@ function AdminCalendar({
     d.getMonth() + off
   );
 
+  const palette = [
+    "#DDEEDB",
+    "#DDE8F6",
+    "#F4E1D7",
+    "#ECE0F4",
+    "#F6EDC9",
+    "#D9F0EE",
+    "#F3DCE6",
+    "#E4E7D3",
+  ];
+
+  const confirmedBookings =
+    s.bookings.filter(
+      (b) =>
+        b.status ===
+        "confirmed"
+    );
+
+  const colourForBooking =
+    (
+      bookingId: string
+    ) => {
+      const index =
+        confirmedBookings.findIndex(
+          (b) =>
+            b.id ===
+            bookingId
+        );
+
+      return palette[
+        (
+          index >= 0
+            ? index
+            : 0
+        ) %
+          palette.length
+      ];
+    };
+
   const info = (
     iso: string
   ) => {
-    const st =
-      nightTaken(
-        iso,
-        s.bookings,
-        s.blocks
+    const block =
+      s.blocks.some(
+        (b) =>
+          iso >=
+            b.start &&
+          iso <=
+            b.end
       );
 
-    const ci =
-      s.bookings.some(
+    if (block) {
+      return {
+        className:
+          "bg-blocked text-muted-foreground",
+
+        mark:
+          "block",
+
+        title:
+          "Μπλοκαρισμένο",
+      };
+    }
+
+    const arriving =
+      confirmedBookings.find(
         (b) =>
-          b.status ===
-            "confirmed" &&
-          b.checkIn === iso
+          b.checkIn ===
+          iso
       );
 
-    const co =
-      s.bookings.some(
+    const departing =
+      confirmedBookings.find(
         (b) =>
-          b.status ===
-            "confirmed" &&
-          b.checkOut === iso
+          b.checkOut ===
+          iso
+      );
+
+    const staying =
+      confirmedBookings.find(
+        (b) =>
+          iso >=
+            b.checkIn &&
+          iso <
+            b.checkOut
       );
 
     const flex =
@@ -924,56 +985,170 @@ function AdminCalendar({
         s.overrides
       );
 
+    if (
+      arriving &&
+      departing &&
+      arriving.id !==
+        departing.id
+    ) {
+      const left =
+        colourForBooking(
+          departing.id
+        );
+
+      const right =
+        colourForBooking(
+          arriving.id
+        );
+
+      return {
+        className:
+          "text-foreground",
+
+        style: {
+          background:
+            `linear-gradient(90deg, ${left} 0%, ${left} 50%, ${right} 50%, ${right} 100%)`,
+        },
+
+        mark:
+          "out · in",
+
+        title:
+          `Αναχώρηση: ${departing.name} · Άφιξη: ${arriving.name}`,
+      };
+    }
+
+    if (arriving) {
+      const colour =
+        colourForBooking(
+          arriving.id
+        );
+
+      return {
+        className:
+          "text-foreground",
+
+        style: {
+          backgroundColor:
+            colour,
+        },
+
+        mark:
+          "in",
+
+        title:
+          `Άφιξη: ${arriving.name}`,
+      };
+    }
+
+    if (staying) {
+      const colour =
+        colourForBooking(
+          staying.id
+        );
+
+      return {
+        className:
+          "text-foreground",
+
+        style: {
+          backgroundColor:
+            colour,
+        },
+
+        mark:
+          "",
+
+        title:
+          `Κράτηση: ${staying.name}`,
+      };
+    }
+
+    if (departing) {
+      const colour =
+        colourForBooking(
+          departing.id
+        );
+
+      return {
+        className:
+          "text-foreground",
+
+        style: {
+          background:
+            `linear-gradient(90deg, ${colour} 0%, ${colour} 50%, transparent 50%, transparent 100%)`,
+        },
+
+        mark:
+          "out",
+
+        title:
+          `Αναχώρηση: ${departing.name}`,
+      };
+    }
+
     return {
       className:
-        st === "booked"
-          ? "bg-booked"
-          : st ===
-              "blocked"
-          ? "bg-blocked text-muted-foreground"
-          : "bg-card hover:bg-accent border",
+        "bg-card hover:bg-accent border",
 
       mark:
-        ci
-          ? "in"
-          : co
-          ? "out"
-          : st
-          ? ""
-          : `€${flex}`,
+        `€${flex}`,
 
       title:
-        st === "booked"
-          ? "Κρατημένο"
-          : st ===
-            "blocked"
-          ? "Μπλοκαρισμένο"
-          : "Διαθέσιμο",
+        "Διαθέσιμο",
     };
   };
 
   const pick = (
     iso: string
   ) => {
-    const b =
-      s.bookings.find(
+    const arriving =
+      confirmedBookings.find(
         (b) =>
-          b.status ===
-            "confirmed" &&
+          b.checkIn ===
+          iso
+      );
+
+    if (arriving) {
+      onOpen(
+        arriving.id
+      );
+      return;
+    }
+
+    const staying =
+      confirmedBookings.find(
+        (b) =>
           iso >=
             b.checkIn &&
-          iso <=
+          iso <
             b.checkOut
       );
 
-    if (b) {
-      onOpen(b.id);
+    if (staying) {
+      onOpen(
+        staying.id
+      );
+      return;
+    }
+
+    const departing =
+      confirmedBookings.find(
+        (b) =>
+          b.checkOut ===
+          iso
+      );
+
+    if (departing) {
+      onOpen(
+        departing.id
+      );
     }
   };
 
   return (
-    <div className="panel p-5 max-w-xl">
-      <div className="flex justify-between mb-2">
+    <div className="panel p-6 max-w-4xl">
+      <div className="flex justify-between mb-3">
         <button
           onClick={() =>
             setOff(
@@ -998,7 +1173,7 @@ function AdminCalendar({
       <MonthCalendar
         year={
           d.getFullYear()
-        }
+      }
         month={
           d.getMonth()
         }
@@ -1007,26 +1182,26 @@ function AdminCalendar({
         onPick={pick}
       />
 
-      <div className="flex gap-4 mt-4 text-xs flex-wrap">
+      <div className="flex gap-4 mt-5 text-xs flex-wrap">
         <span>
-          Διαθέσιμο
+          Κάθε κράτηση έχει διαφορετικό χρώμα
         </span>
 
         <span>
-          Κρατημένο
+          Μισό / μισό = αναχώρηση και νέα άφιξη την ίδια ημέρα
         </span>
 
         <span>
-          Μπλοκαρισμένο
+          in = άφιξη 15:00
         </span>
 
         <span>
-          in = άφιξη 15:00 · out = αναχώρηση 11:00
+          out = αναχώρηση 11:00
         </span>
       </div>
 
       <p className="text-xs text-muted-foreground mt-2">
-        Πατήστε σε κρατημένη ημερομηνία για να ανοίξετε την κράτηση.
+        Πατήστε σε χρωματισμένη ημερομηνία για να ανοίξετε την κράτηση.
       </p>
     </div>
   );
@@ -1051,7 +1226,7 @@ function Bookings({
         className="btn-gold"
         onClick={() => setShow(!show)}
       >
-        {show ? "Κλείσιμο" : "+ Χειροκίνητη κράτηση"}
+        {show ? "Κλείηνο" : "+ Ηειροκίνητη κράτηση"}
       </button>
 
       {show && (
@@ -1082,7 +1257,7 @@ function Bookings({
                   {b.adults != null ? (
                     <>
                       · {b.adults} {b.adults === 1 ? "ενήλικας" : "ενήλικες"} ·{" "}
-                      {children} {children === 1 ? "παιδί" : "παιδιά"}
+                      {children} {children === 1 ? "παδί" : "παιδιά"}
                     </>
                   ) : (
                     <>· {b.guests} άτομα</>
