@@ -9,27 +9,61 @@ export const FULL_REFUND_DAYS = 21;
 
 export type RateType = "flexible" | "nonref";
 
+export type NightlyPrice = {
+  date: string;
+  price: number;
+};
+
 export interface Booking {
   id: string;
   code: string;
   checkIn: string;
   checkOut: string;
+
   guests: number;
+
+  /*
+   * Detailed guest information.
+   * Older bookings may not have
+   * these values.
+   */
+  adults?: number;
+  childAges?: number[];
+
   name: string;
   email: string;
   phone: string;
+
   rate: RateType;
   total: number;
-  status: "confirmed" | "cancelled";
+
+  /*
+   * Manual booking details.
+   */
+  nightlyPrices?: NightlyPrice[];
+  depositAmount?: number;
+  notes?: string;
+
+  status:
+    | "confirmed"
+    | "cancelled";
+
   refund?: number;
+
   createdAt: string;
-  source: "web" | "manual";
+
+  source:
+    | "web"
+    | "manual";
+
   note?: string;
+
   depositStatus?:
     | "not-authorized"
     | "authorized"
     | "release-initiated"
     | "issue";
+
   cancellationReason?:
     | "guest"
     | "host"
@@ -54,35 +88,82 @@ export interface Override {
 }
 
 export const toISO = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+  `${d.getFullYear()}-${String(
+    d.getMonth() + 1
+  ).padStart(
+    2,
+    "0"
+  )}-${String(
     d.getDate()
-  ).padStart(2, "0")}`;
+  ).padStart(
+    2,
+    "0"
+  )}`;
 
-export const parseISO = (s: string) => {
-  const [y, m, d] = s.split("-").map(Number);
+export const parseISO = (
+  s: string
+) => {
+  const [y, m, d] =
+    s
+      .split("-")
+      .map(Number);
 
-  if (y === undefined || m === undefined || d === undefined) {
+  if (
+    y === undefined ||
+    m === undefined ||
+    d === undefined
+  ) {
     return new Date(NaN);
   }
 
-  return new Date(y, m - 1, d);
+  return new Date(
+    y,
+    m - 1,
+    d
+  );
 };
 
-export const addDays = (s: string, n: number) => {
-  const d = parseISO(s);
-  d.setDate(d.getDate() + n);
+export const addDays = (
+  s: string,
+  n: number
+) => {
+  const d =
+    parseISO(s);
+
+  d.setDate(
+    d.getDate() + n
+  );
+
   return toISO(d);
 };
 
-export const diffDays = (a: string, b: string) =>
+export const diffDays = (
+  a: string,
+  b: string
+) =>
   Math.round(
-    (parseISO(b).getTime() - parseISO(a).getTime()) / 86400000
+    (
+      parseISO(b).getTime() -
+      parseISO(a).getTime()
+    ) /
+      86400000
   );
 
-export const nightsOf = (ci: string, co: string) => {
-  const r: string[] = [];
+export const nightsOf = (
+  ci: string,
+  co: string
+) => {
+  const r: string[] =
+    [];
 
-  for (let d = ci; d < co; d = addDays(d, 1)) {
+  for (
+    let d = ci;
+    d < co;
+    d = addDays(
+      d,
+      1
+    )
+  ) {
     r.push(d);
   }
 
@@ -92,7 +173,9 @@ export const nightsOf = (ci: string, co: string) => {
 const matchOverride = (
   date: string,
   ov: Override[],
-  key: "price" | "minNights"
+  key:
+    | "price"
+    | "minNights"
 ) =>
   [...ov]
     .reverse()
@@ -107,21 +190,41 @@ export const flexRateFor = (
   date: string,
   ov: Override[]
 ) =>
-  (matchOverride(date, ov, "price") as
-    | number
-    | undefined) ?? BASE_RATE;
+  (
+    matchOverride(
+      date,
+      ov,
+      "price"
+    ) as
+      | number
+      | undefined
+  ) ??
+  BASE_RATE;
 
-export const nonRefOf = (flex: number) =>
-  Math.round(flex * (1 - NONREF_DISCOUNT));
+export const nonRefOf = (
+  flex: number
+) =>
+  Math.round(
+    flex *
+      (
+        1 -
+        NONREF_DISCOUNT
+      )
+  );
 
 export const rateFor = (
   date: string,
   rate: RateType,
   ov: Override[]
 ) => {
-  const f = flexRateFor(date, ov);
+  const f =
+    flexRateFor(
+      date,
+      ov
+    );
 
-  return rate === "flexible"
+  return rate ===
+    "flexible"
     ? f
     : nonRefOf(f);
 };
@@ -130,9 +233,16 @@ export const minNightsFor = (
   ci: string,
   ov: Override[]
 ) =>
-  (matchOverride(ci, ov, "minNights") as
-    | number
-    | undefined) ?? DEFAULT_MIN_NIGHTS;
+  (
+    matchOverride(
+      ci,
+      ov,
+      "minNights"
+    ) as
+      | number
+      | undefined
+  ) ??
+  DEFAULT_MIN_NIGHTS;
 
 export function quote(
   ci: string,
@@ -140,29 +250,49 @@ export function quote(
   rate: RateType,
   ov: Override[]
 ) {
-  const nights = nightsOf(ci, co).map((d) => ({
-    date: d,
-    price: rateFor(d, rate, ov),
-  }));
+  const nights =
+    nightsOf(
+      ci,
+      co
+    ).map(
+      (d) => ({
+        date: d,
+        price:
+          rateFor(
+            d,
+            rate,
+            ov
+          ),
+      })
+    );
 
   return {
     nights,
-    total: nights.reduce(
-      (s, n) => s + n.price,
-      0
-    ),
+
+    total:
+      nights.reduce(
+        (
+          s,
+          n
+        ) =>
+          s +
+          n.price,
+        0
+      ),
   };
 }
 
 /*
  * IMPORTANT MM HOME RULE
  *
- * The checkout date is also unavailable for a new check-in.
+ * The checkout date is also
+ * unavailable for a new check-in.
  *
  * Example:
- * Existing booking: 18 → 20 October
+ * Existing booking:
+ * 18 -> 20 October
  *
- * Unavailable for a new arrival:
+ * Unavailable for new arrival:
  * 18, 19 and 20 October
  *
  * Next possible arrival:
@@ -177,10 +307,14 @@ export function nightTaken(
   if (
     bookings.some(
       (b) =>
-        b.id !== ignoreId &&
-        b.status === "confirmed" &&
-        date >= b.checkIn &&
-        date <= b.checkOut
+        b.id !==
+          ignoreId &&
+        b.status ===
+          "confirmed" &&
+        date >=
+          b.checkIn &&
+        date <=
+          b.checkOut
     )
   ) {
     return "booked";
@@ -189,8 +323,10 @@ export function nightTaken(
   if (
     blocks.some(
       (b) =>
-        date >= b.start &&
-        date <= b.end
+        date >=
+          b.start &&
+        date <=
+          b.end
     )
   ) {
     return "blocked";
@@ -214,40 +350,51 @@ export function validateStay(
   blocks: Block[],
   ov: Override[]
 ): StayError {
-  if (co <= ci) {
+  if (
+    co <= ci
+  ) {
     return "order";
   }
 
-  if (diffDays(today, ci) < LEAD_DAYS) {
+  if (
+    diffDays(
+      today,
+      ci
+    ) <
+    LEAD_DAYS
+  ) {
     return "lead";
   }
 
   if (
-    diffDays(ci, co) <
-    minNightsFor(ci, ov)
+    diffDays(
+      ci,
+      co
+    ) <
+    minNightsFor(
+      ci,
+      ov
+    )
   ) {
     return "min";
   }
 
-  /*
-   * Check all nights PLUS the checkout date.
-   *
-   * This prevents:
-   * booking A checkout = 20/10
-   * booking B check-in = 20/10
-   */
   const datesToCheck = [
-    ...nightsOf(ci, co),
+    ...nightsOf(
+      ci,
+      co
+    ),
     co,
   ];
 
   if (
-    datesToCheck.some((d) =>
-      nightTaken(
-        d,
-        bookings,
-        blocks
-      )
+    datesToCheck.some(
+      (d) =>
+        nightTaken(
+          d,
+          bookings,
+          blocks
+        )
     )
   ) {
     return "taken";
@@ -259,19 +406,23 @@ export function validateStay(
 export function refundFor(
   b: Pick<
     Booking,
-    "rate" | "total" | "checkIn"
+    | "rate"
+    | "total"
+    | "checkIn"
   >,
   today: string
 ) {
-  const daysBefore = diffDays(
-    today,
-    b.checkIn
-  );
+  const daysBefore =
+    diffDays(
+      today,
+      b.checkIn
+    );
 
   const percent =
     daysBefore < 0
       ? 0
-      : b.rate === "nonref"
+      : b.rate ===
+        "nonref"
       ? 0
       : daysBefore >=
         FULL_REFUND_DAYS
@@ -280,9 +431,16 @@ export function refundFor(
 
   return {
     percent,
-    amount: Math.round(
-      (b.total * percent) / 100
-    ),
+
+    amount:
+      Math.round(
+        (
+          b.total *
+          percent
+        ) /
+          100
+      ),
+
     daysBefore,
   };
 }
@@ -291,13 +449,19 @@ export const genCode = () => {
   const c =
     "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-  let s = "MM-";
+  let s =
+    "MM-";
 
-  for (let i = 0; i < 6; i++) {
+  for (
+    let i = 0;
+    i < 6;
+    i++
+  ) {
     s +=
       c[
         Math.floor(
-          Math.random() * c.length
+          Math.random() *
+            c.length
         )
       ];
   }
