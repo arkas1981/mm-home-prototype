@@ -10,6 +10,7 @@ import {
 
 import {
   adminCreateBookingD1,
+  adminUpdateBookingD1,
 } from "@/lib/d1-admin.functions";
 
 import {
@@ -33,6 +34,8 @@ type Props = {
   overrides: Override[];
   reload: () => Promise<void>;
   onDone: () => void;
+
+  booking?: Booking;
 };
 
 const eur = (
@@ -62,53 +65,87 @@ export function AdminManualBooking({
   overrides,
   reload,
   onDone,
+  booking,
 }: Props) {
   const today =
     todayISO();
+
+  const editing =
+    Boolean(
+      booking
+    );
 
   const create =
     useServerFn(
       adminCreateBookingD1
     );
 
+  const update =
+    useServerFn(
+      adminUpdateBookingD1
+    );
+
   const [name, setName] =
-    useState("");
+    useState(
+      booking?.name ??
+        ""
+    );
 
   const [email, setEmail] =
-    useState("");
+    useState(
+      booking?.email ??
+        ""
+    );
 
   const [phone, setPhone] =
-    useState("");
+    useState(
+      booking?.phone ??
+        ""
+    );
 
   const [checkIn, setCheckIn] =
     useState(
-      addDays(
-        today,
-        7
-      )
+      booking?.checkIn ??
+        addDays(
+          today,
+          7
+        )
     );
 
   const [checkOut, setCheckOut] =
     useState(
-      addDays(
-        today,
-        9
-      )
+      booking?.checkOut ??
+        addDays(
+          today,
+          9
+        )
     );
 
   const [rate, setRate] =
     useState<RateType>(
-      "flexible"
+      booking?.rate ??
+        "flexible"
     );
 
   const [adults, setAdults] =
-    useState(2);
+    useState(
+      booking?.adults ??
+        Math.max(
+          1,
+          booking?.guests ??
+            2
+        )
+    );
 
   const [
     childAges,
     setChildAges,
   ] = useState<string[]>(
-    []
+    booking?.childAges?.map(
+      (age) =>
+        String(age)
+    ) ??
+      []
   );
 
   const [
@@ -116,25 +153,46 @@ export function AdminManualBooking({
     setNightlyPrices,
   ] = useState<
     NightlyPrice[]
-  >([]);
+  >(
+    booking?.nightlyPrices ??
+      []
+  );
 
   const [
     depositAmount,
     setDepositAmount,
-  ] = useState(0);
+  ] = useState(
+    booking?.depositAmount ??
+      0
+  );
 
   const [notes, setNotes] =
-    useState("");
+    useState(
+      booking?.notes ??
+        ""
+    );
 
   const [saving, setSaving] =
     useState(false);
+
+  const [
+    pricesInitialized,
+    setPricesInitialized,
+  ] =
+    useState(
+      Boolean(
+        booking?.nightlyPrices
+          ?.length
+      )
+    );
 
   const baseQuote =
     useMemo(() => {
       if (
         !checkIn ||
         !checkOut ||
-        checkOut <= checkIn
+        checkOut <=
+          checkIn
       ) {
         return null;
       }
@@ -153,20 +211,75 @@ export function AdminManualBooking({
     ]);
 
   /*
-   * Whenever dates or rate
-   * change, initialise the
-   * nightly prices with the
-   * normal MM Home prices.
+   * New booking:
+   * initialise nightly prices
+   * from MM Home pricing.
    *
-   * The owner can then change
-   * every night manually.
+   * Existing booking:
+   * keep the saved nightly
+   * prices until dates/rate
+   * are changed.
    */
   useEffect(() => {
-    setNightlyPrices(
-      baseQuote?.nights ??
+    if (
+      !baseQuote
+    ) {
+      setNightlyPrices(
         []
+      );
+
+      return;
+    }
+
+    if (
+      editing &&
+      pricesInitialized
+    ) {
+      const sameDates =
+        booking?.checkIn ===
+          checkIn &&
+        booking?.checkOut ===
+          checkOut &&
+        booking?.rate ===
+          rate;
+
+      if (
+        sameDates &&
+        booking
+          ?.nightlyPrices
+          ?.length
+      ) {
+        setNightlyPrices(
+          booking.nightlyPrices
+        );
+
+        return;
+      }
+
+      setPricesInitialized(
+        false
+      );
+    }
+
+    setNightlyPrices(
+      baseQuote.nights
     );
-  }, [baseQuote]);
+  }, [
+    baseQuote,
+    booking,
+    checkIn,
+    checkOut,
+    editing,
+    pricesInitialized,
+    rate,
+  ]);
+
+  const children =
+    childAges.length;
+
+  const totalGuests =
+    adults +
+    children;
 
   const total =
     nightlyPrices.reduce(
@@ -190,12 +303,15 @@ export function AdminManualBooking({
         depositAmount
     );
 
-  const children =
-    childAges.length;
-
-  const totalGuests =
-    adults +
-    children;
+  const bookingsForValidation =
+    editing &&
+    booking
+      ? bookings.filter(
+          (item) =>
+            item.id !==
+            booking.id
+        )
+      : bookings;
 
   const stayError =
     checkOut <= checkIn
@@ -206,19 +322,12 @@ export function AdminManualBooking({
               checkIn,
               checkOut,
 
-              /*
-               * Manual reservations
-               * are allowed even if
-               * they do not respect
-               * the public website's
-               * lead-time rule.
-               */
               addDays(
                 checkIn,
                 -999
               ),
 
-              bookings,
+              bookingsForValidation,
               blocks,
               []
             );
@@ -228,6 +337,14 @@ export function AdminManualBooking({
             ? "Οι ημερομηνίες δεν είναι διαθέσιμες."
             : null;
         })();
+
+  const adultError =
+    !Number.isFinite(
+      adults
+    ) ||
+    adults < 1
+      ? "Πρέπει να υπάρχει τουλάχιστον 1 ενήλικας."
+      : null;
 
   const childAgeError =
     childAges.some(
@@ -242,12 +359,6 @@ export function AdminManualBooking({
           17
     )
       ? "Συμπλήρωσε σωστά την ηλικία κάθε παιδιού."
-      : null;
-
-  const guestError =
-    totalGuests >
-    6
-      ? "Το MM Home δέχεται έως 6 επισκέπτες συνολικά."
       : null;
 
   const priceError =
@@ -276,8 +387,8 @@ export function AdminManualBooking({
 
   const error =
     stayError ??
+    adultError ??
     childAgeError ??
-    guestError ??
     priceError ??
     depositError;
 
@@ -285,26 +396,38 @@ export function AdminManualBooking({
     (
       count: number
     ) => {
+      const safeCount =
+        Math.max(
+          0,
+          Math.floor(
+            Number(
+              count
+            )
+          )
+        );
+
       setChildAges(
         (current) => {
           if (
-            count <=
+            safeCount <=
             current.length
           ) {
             return current.slice(
               0,
-              count
+              safeCount
             );
           }
 
           return [
             ...current,
+
             ...Array.from(
               {
                 length:
-                  count -
+                  safeCount -
                   current.length,
               },
+
               () => ""
             ),
           ];
@@ -374,60 +497,76 @@ export function AdminManualBooking({
 
       setSaving(true);
 
+      const payload = {
+        checkIn,
+        checkOut,
+
+        name:
+          name.trim(),
+
+        email:
+          email
+            .trim()
+            .toLowerCase(),
+
+        phone:
+          phone.trim(),
+
+        rate,
+
+        adults:
+          Math.floor(
+            adults
+          ),
+
+        childAges:
+          childAges.map(
+            (age) =>
+              Number(
+                age
+              )
+          ),
+
+        nightlyPrices:
+          nightlyPrices.map(
+            (item) => ({
+              date:
+                item.date,
+
+              price:
+                Math.round(
+                  Number(
+                    item.price
+                  )
+                ),
+            })
+          ),
+
+        depositAmount:
+          Math.round(
+            depositAmount
+          ),
+
+        notes:
+          notes.trim(),
+      };
+
       try {
         const result =
-          await create({
-            data: {
-              checkIn,
-              checkOut,
+          editing &&
+          booking
+            ? await update({
+                data: {
+                  id:
+                    booking.id,
 
-              name:
-                name.trim(),
-
-              email:
-                email
-                  .trim()
-                  .toLowerCase(),
-
-              phone:
-                phone.trim(),
-
-              rate,
-
-              adults,
-
-              childAges:
-                childAges.map(
-                  (age) =>
-                    Number(
-                      age
-                    )
-                ),
-
-              nightlyPrices:
-                nightlyPrices.map(
-                  (item) => ({
-                    date:
-                      item.date,
-
-                    price:
-                      Math.round(
-                        Number(
-                          item.price
-                        )
-                      ),
-                  })
-                ),
-
-              depositAmount:
-                Math.round(
-                  depositAmount
-                ),
-
-              notes:
-                notes.trim(),
-            },
-          });
+                  ...payload,
+                },
+              })
+            : await create({
+                data:
+                  payload,
+              });
 
         if (
           "error" in
@@ -446,7 +585,7 @@ export function AdminManualBooking({
             "guests"
           ) {
             alert(
-              "Ο συνολικός αριθμός επισκεπτών δεν είναι έγκυρος."
+              "Έλεγξε τον αριθμό ενηλίκων και τις ηλικίες των παιδιών."
             );
           } else if (
             result.error ===
@@ -454,6 +593,20 @@ export function AdminManualBooking({
           ) {
             alert(
               "Οι τιμές ανά διανυκτέρευση δεν είναι έγκυρες."
+            );
+          } else if (
+            result.error ===
+            "deposit"
+          ) {
+            alert(
+              "Η προκαταβολή δεν είναι έγκυρη."
+            );
+          } else if (
+            result.error ===
+            "not_manual"
+          ) {
+            alert(
+              "Μόνο οι χειροκίνητες κρατήσεις μπορούν να επεξεργαστούν."
             );
           } else {
             alert(
@@ -476,11 +629,15 @@ export function AdminManualBooking({
     <div className="panel p-5 space-y-6">
       <div>
         <p className="font-serif text-2xl">
-          Νέα χειροκίνητη κράτηση
+          {editing
+            ? "Επεξεργασία χειροκίνητης κράτησης"
+            : "Νέα χειροκίνητη κράτηση"}
         </p>
 
         <p className="text-xs text-muted-foreground mt-1">
-          Για τηλεφωνικές ή απευθείας κρατήσεις.
+          {editing
+            ? `Κωδικός κράτησης: ${booking?.code}`
+            : "Για τηλεφωνικές ή απευθείας κρατήσεις."}
         </p>
       </div>
 
@@ -490,7 +647,9 @@ export function AdminManualBooking({
 
           <input
             className="field mt-1"
-            value={name}
+            value={
+              name
+            }
             onChange={(e) =>
               setName(
                 e.target.value
@@ -505,7 +664,9 @@ export function AdminManualBooking({
 
           <input
             className="field mt-1"
-            value={phone}
+            value={
+              phone
+            }
             onChange={(e) =>
               setPhone(
                 e.target.value
@@ -521,7 +682,9 @@ export function AdminManualBooking({
           <input
             type="email"
             className="field mt-1"
-            value={email}
+            value={
+              email
+            }
             onChange={(e) =>
               setEmail(
                 e.target.value
@@ -576,74 +739,40 @@ export function AdminManualBooking({
 
       <div className="border-t pt-5">
         <p className="font-medium mb-3">
-          Επισκέπτες
+          Άτομα
         </p>
 
         <div className="grid sm:grid-cols-2 gap-3">
           <label className="text-xs">
             Ενήλικες
 
-            <select
+            <input
+              type="number"
+              min="1"
               className="field mt-1"
               value={
                 adults
               }
-              onChange={(e) => {
-                const nextAdults =
-                  Number(
-                    e.target
-                      .value
-                  );
-
+              onChange={(e) =>
                 setAdults(
-                  nextAdults
-                );
-
-                if (
-                  nextAdults +
-                    childAges.length >
-                  6
-                ) {
-                  setChildrenCount(
-                    Math.max(
-                      0,
-                      6 -
-                        nextAdults
-                    )
-                  );
-                }
-              }}
-            >
-              {[
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-              ].map(
-                (value) => (
-                  <option
-                    key={
-                      value
-                    }
-                    value={
-                      value
-                    }
-                  >
-                    {
-                      value
-                    }
-                  </option>
+                  Math.max(
+                    1,
+                    Number(
+                      e.target.value
+                    ) ||
+                      1
+                  )
                 )
-              )}
-            </select>
+              }
+            />
           </label>
 
           <label className="text-xs">
             Παιδιά
 
-            <select
+            <input
+              type="number"
+              min="0"
               className="field mt-1"
               value={
                 children
@@ -651,44 +780,11 @@ export function AdminManualBooking({
               onChange={(e) =>
                 setChildrenCount(
                   Number(
-                    e.target
-                      .value
+                    e.target.value
                   )
                 )
               }
-            >
-              {Array.from(
-                {
-                  length:
-                    Math.max(
-                      0,
-                      6 -
-                        adults
-                    ) +
-                    1,
-                },
-                (
-                  _,
-                  index
-                ) =>
-                  index
-              ).map(
-                (value) => (
-                  <option
-                    key={
-                      value
-                    }
-                    value={
-                      value
-                    }
-                  >
-                    {
-                      value
-                    }
-                  </option>
-                )
-              )}
-            </select>
+            />
           </label>
         </div>
 
@@ -741,14 +837,31 @@ export function AdminManualBooking({
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground mt-3">
-          Σύνολο επισκεπτών:{" "}
-          <strong>
-            {
-              totalGuests
-            }
-          </strong>
-        </p>
+        <div className="mt-3 text-sm">
+          <p>
+            <strong>
+              {adults}
+            </strong>{" "}
+            {adults ===
+            1
+              ? "ενήλικας"
+              : "ενήλικες"}
+            {" · "}
+            <strong>
+              {children}
+            </strong>{" "}
+            {children ===
+            1
+              ? "παιδί"
+              : "παιδιά"}
+          </p>
+
+          <p className="text-xs text-muted-foreground mt-1">
+            Σύνολο:{" "}
+            {totalGuests}{" "}
+            άτομα
+          </p>
+        </div>
       </div>
 
       <div className="border-t pt-5">
@@ -965,6 +1078,20 @@ export function AdminManualBooking({
       <div className="border-t pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="text-sm">
           <p>
+            Ενήλικες:{" "}
+            <strong>
+              {adults}
+            </strong>
+          </p>
+
+          <p>
+            Παιδιά:{" "}
+            <strong>
+              {children}
+            </strong>
+          </p>
+
+          <p className="mt-2">
             Συνολικό ποσό:{" "}
             <strong>
               {eur(
@@ -1006,6 +1133,8 @@ export function AdminManualBooking({
         >
           {saving
             ? "Αποθήκευση…"
+            : editing
+            ? "Αποθήκευση αλλαγών"
             : "Αποθήκευση κράτησης"}
         </button>
       </div>
