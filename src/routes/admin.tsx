@@ -24,7 +24,6 @@ import {
 import {
   adminAddBlockD1 as adminAddBlock,
   adminAddOverrideD1 as adminAddOverride,
-  adminCreateBookingD1 as adminCreateBooking,
   adminDataD1 as adminData,
   adminRemoveBlockD1 as adminRemoveBlock,
   adminRemoveOverrideD1 as adminRemoveOverride,
@@ -50,11 +49,8 @@ import {
   minNightsFor,
   nightTaken,
   nonRefOf,
-  quote,
   toISO,
-  validateStay,
   type Booking,
-  type RateType,
 } from "@/lib/booking";
 
 import {
@@ -65,6 +61,7 @@ import {
 
 import { MonthCalendar } from "@/components/MonthCalendar";
 import { AdminReviews } from "@/components/AdminReviews";
+import { AdminManualBooking } from "@/components/AdminManualBooking";
 import { Logo } from "@/components/site";
 import { SLOGAN } from "@/lib/i18n";
 import { meta } from "@/lib/meta";
@@ -1069,7 +1066,11 @@ function Bookings({
       </button>
 
       {show && (
-        <ManualBooking
+        <AdminManualBooking
+          bookings={s.bookings}
+          blocks={s.blocks}
+          overrides={s.overrides}
+          reload={s.reload}
           onDone={() =>
             setShow(false)
           }
@@ -1128,262 +1129,6 @@ function Bookings({
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function ManualBooking({
-  onDone,
-}: {
-  onDone: () => void;
-}) {
-  const s = useAdmin();
-
-  const today =
-    todayISO();
-
-  const [f, setF] =
-    useState({
-      name: "",
-      email: "",
-      phone: "",
-      guests: 2,
-      ci: addDays(
-        today,
-        7
-      ),
-      co: addDays(
-        today,
-        9
-      ),
-      rate:
-        "flexible" as RateType,
-    });
-
-  const err =
-    f.co <= f.ci
-      ? "Η αναχώρηση πρέπει να είναι μετά την άφιξη."
-      : (() => {
-          const e =
-            validateStay(
-              f.ci,
-              f.co,
-              addDays(
-                f.ci,
-                -999
-              ),
-              s.bookings,
-              s.blocks,
-              []
-            );
-
-          return e ===
-            "taken"
-            ? "Οι ημερομηνίες δεν είναι διαθέσιμες."
-            : null;
-        })();
-
-  const q =
-    f.co > f.ci
-      ? quote(
-          f.ci,
-          f.co,
-          f.rate,
-          s.overrides
-        )
-      : null;
-
-  const create =
-    useServerFn(
-      adminCreateBooking
-    );
-
-  const save =
-    async () => {
-      if (
-        err ||
-        !q ||
-        !f.name.trim() ||
-        !f.email.trim()
-      ) {
-        return;
-      }
-
-      const r =
-        await create({
-          data: {
-            checkIn:
-              f.ci,
-            checkOut:
-              f.co,
-            guests:
-              f.guests,
-            name:
-              f.name,
-            email:
-              f.email,
-            phone:
-              f.phone,
-            rate:
-              f.rate,
-          },
-        });
-
-      if (
-        "error" in r &&
-        r.error
-      ) {
-        alert(
-          r.error ===
-            "taken"
-            ? "Οι ημερομηνίες δεν είναι διαθέσιμες."
-            : "Δεν ήταν δυνατή η αποθήκευση."
-        );
-        return;
-      }
-
-      await s.reload();
-      onDone();
-    };
-
-  return (
-    <div className="panel p-5 grid sm:grid-cols-2 gap-3">
-      <input
-        className="field"
-        placeholder="Ονοματεπώνυμο"
-        value={f.name}
-        onChange={(e) =>
-          setF({
-            ...f,
-            name:
-              e.target.value,
-          })
-        }
-      />
-
-      <input
-        className="field"
-        placeholder="Email"
-        value={f.email}
-        onChange={(e) =>
-          setF({
-            ...f,
-            email:
-              e.target.value,
-          })
-        }
-      />
-
-      <input
-        className="field"
-        placeholder="Κινητό"
-        value={f.phone}
-        onChange={(e) =>
-          setF({
-            ...f,
-            phone:
-              e.target.value,
-          })
-        }
-      />
-
-      <select
-        className="field"
-        value={f.guests}
-        onChange={(e) =>
-          setF({
-            ...f,
-            guests:
-              +e.target.value,
-          })
-        }
-      >
-        {[1, 2, 3, 4, 5, 6].map(
-          (n) => (
-            <option
-              key={n}
-            >
-              {n}
-            </option>
-          )
-        )}
-      </select>
-
-      <label className="text-xs">
-        Άφιξη
-
-        <input
-          type="date"
-          className="field"
-          value={f.ci}
-          onChange={(e) =>
-            setF({
-              ...f,
-              ci:
-                e.target.value,
-            })
-          }
-        />
-      </label>
-
-      <label className="text-xs">
-        Αναχώρηση
-
-        <input
-          type="date"
-          className="field"
-          value={f.co}
-          onChange={(e) =>
-            setF({
-              ...f,
-              co:
-                e.target.value,
-            })
-          }
-        />
-      </label>
-
-      <select
-        className="field"
-        value={f.rate}
-        onChange={(e) =>
-          setF({
-            ...f,
-            rate:
-              e.target.value as RateType,
-          })
-        }
-      >
-        <option value="flexible">
-          Ευέλικτη
-        </option>
-
-        <option value="nonref">
-          Μη επιστρέψιμη
-        </option>
-      </select>
-
-      <div className="flex items-center justify-between gap-3">
-        <span className="font-serif text-2xl">
-          {q
-            ? eur(q.total)
-            : "—"}
-        </span>
-
-        <button
-          className="btn-gold"
-          disabled={!!err}
-          onClick={save}
-        >
-          Αποθήκευση
-        </button>
-      </div>
-
-      {err && (
-        <p className="text-sm text-destructive sm:col-span-2">
-          {err}
-        </p>
-      )}
     </div>
   );
 }
