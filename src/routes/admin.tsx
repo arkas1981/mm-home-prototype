@@ -1040,29 +1040,18 @@ function Bookings({
   ) => void;
 }) {
   const s = useAdmin();
-
-  const [show, setShow] =
-    useState(false);
-
-  const list = [
-    ...s.bookings,
-  ].sort((a, b) =>
-    b.checkIn.localeCompare(
-      a.checkIn
-    )
+  const [show, setShow] = useState(false);
+  const list = [...s.bookings].sort((a, b) =>
+    b.checkIn.localeCompare(a.checkIn)
   );
 
   return (
     <div className="space-y-4">
       <button
         className="btn-gold"
-        onClick={() =>
-          setShow(!show)
-        }
+        onClick={() => setShow(!show)}
       >
-        {show
-          ? "Κλείσιμο"
-          : "+ Χειροκίνητη κράτηση"}
+        {show ? "Κλείσιμο" : "+ Χειροκίνητη κράτηση"}
       </button>
 
       {show && (
@@ -1071,63 +1060,48 @@ function Bookings({
           blocks={s.blocks}
           overrides={s.overrides}
           reload={s.reload}
-          onDone={() =>
-            setShow(false)
-          }
+          onDone={() => setShow(false)}
         />
       )}
 
       <div className="space-y-2">
-        {list.map((b) => (
-          <button
-            key={b.id}
-            onClick={() =>
-              onOpen(b.id)
-            }
-            className="panel p-4 w-full text-left flex justify-between items-center gap-3"
-          >
-            <div>
-              <p className="font-medium">
-                {b.name}
-              </p>
+        {list.map((b) => {
+          const children = b.childAges?.length ?? 0;
 
-              <p className="text-xs text-muted-foreground">
-                {b.code} ·{" "}
-                {fd(
-                  b.checkIn
-                )}{" "}
-                →{" "}
-                {fd(
-                  b.checkOut
-                )}{" "}
-                · {b.guests} άτομα ·{" "}
-                {b.rate ===
-                "flexible"
-                  ? "Ευέλικτη"
-                  : "Μη επιστρέψιμη"}
-                {b.source ===
-                "manual"
-                  ? " · χειροκίνητη"
-                  : " · online"}
-              </p>
-            </div>
+          return (
+            <button
+              key={b.id}
+              onClick={() => onOpen(b.id)}
+              className="panel p-4 w-full text-left flex justify-between items-center gap-3"
+            >
+              <div>
+                <p className="font-medium">{b.name}</p>
 
-            <div className="text-right">
-              <p className="font-serif text-xl">
-                {eur(
-                  b.total
-                )}
-              </p>
+                <p className="text-xs text-muted-foreground">
+                  {b.code} · {fd(b.checkIn)} → {fd(b.checkOut)}{" "}
+                  {b.adults != null ? (
+                    <>
+                      · {b.adults} {b.adults === 1 ? "ενήλικας" : "ενήλικες"} ·{" "}
+                      {children} {children === 1 ? "παιδί" : "παιδιά"}
+                    </>
+                  ) : (
+                    <>· {b.guests} άτομα</>
+                  )}
+                  {" · "}
+                  {b.rate === "flexible" ? "Ευέλικτη" : "Μη επιστρέψιμη"}
+                  {b.source === "manual" ? " · χειροκίνητη" : " · online"}
+                </p>
+              </div>
 
-              <p className="text-xs text-olive">
-                {b.status ===
-                "confirmed"
-                  ? "Επιβεβαιωμένη"
-                  : "Ακυρωμένη"}
-              </p>
-            </div>
-          </button>
-        ))}
+              <div className="text-right">
+                <p className="font-serif text-xl">{eur(b.total)}</p>
+                <p className="text-xs text-olive">
+                  {b.status === "confirmed" ? "Επιβεβαιωμένη" : "Ακυρωμένη"}
+                </p>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -1141,182 +1115,163 @@ function BookingDetail({
   onBack: () => void;
 }) {
   const s = useAdmin();
+  const [editing, setEditing] = useState(false);
+  const setFn = useServerFn(adminSetBookingStatus);
 
-  const setFn =
-    useServerFn(
-      adminSetBookingStatus
-    );
-
-  const b =
-    s.bookings.find(
-      (x) => x.id === id
-    );
+  const b = s.bookings.find((x) => x.id === id);
 
   if (!b) {
     return null;
   }
 
-  const rows:
-    [string, string][] = [
-    [
-      "Κωδικός",
-      b.code,
-    ],
-    [
-      "Κατάσταση",
-      b.status ===
-      "confirmed"
-        ? "Επιβεβαιωμένη"
-        : "Ακυρωμένη",
-    ],
-    [
-      "Επισκέπτης",
-      b.name,
-    ],
-    [
-      "Email",
-      b.email,
-    ],
-    [
-      "Κινητό",
-      b.phone,
-    ],
-    [
-      "Επισκέπτες",
-      String(b.guests),
-    ],
-    [
-      "Άφιξη",
-      fd(b.checkIn) +
-        " · 15:00",
-    ],
-    [
-      "Αναχώρηση",
-      fd(b.checkOut) +
-        " · 11:00",
-    ],
-    [
-      "Νύχτες",
-      String(
-        diffDays(
-          b.checkIn,
-          b.checkOut
-        )
-      ),
-    ],
-    [
-      "Τιμή",
-      b.rate ===
-      "flexible"
-        ? "Ευέλικτη"
-        : "Μη επιστρέψιμη",
-    ],
-    [
-      "Σύνολο",
-      eur(b.total),
-    ],
-    [
-      "Επιστροφή",
-      b.refund != null
-        ? eur(b.refund)
-        : "—",
-    ],
-    [
-      "Πηγή",
-      b.source ===
-      "manual"
-        ? "Χειροκίνητη"
-        : "Online",
-    ],
-    [
-      "Σύνδεσμος αξιολόγησης",
-      `/review/${b.code}`,
-    ],
+  if (editing && b.source === "manual") {
+    return (
+      <div className="space-y-4 max-w-2xl">
+        <button
+          onClick={() => setEditing(false)}
+          className="text-sm flex items-center gap-1"
+        >
+          <ChevronLeft size={16} />
+          Πίσω στα στοιχεία κράτησης
+        </button>
+
+        <AdminManualBooking
+          booking={b}
+          bookings={s.bookings}
+          blocks={s.blocks}
+          overrides={s.overrides}
+          reload={s.reload}
+          onDone={() => setEditing(false)}
+        />
+      </div>
+    );
+  }
+
+  const children = b.childAges?.length ?? 0;
+  const agesText =
+    b.childAges && b.childAges.length > 0
+      ? b.childAges.map((age) => String(age)).join(", ")
+      : "—";
+
+  const deposit = b.depositAmount ?? 0;
+  const balance = Math.max(0, b.total - deposit);
+
+  const rows: [string, string][] = [
+    ["Κωδικός", b.code],
+    ["Κατάσταση", b.status === "confirmed" ? "Επιβεβαιωμένη" : "Ακυρωμένη"],
+    ["Επισκέπτης", b.name],
+    ["Email", b.email || "—"],
+    ["Κινητό", b.phone || "—"],
+
+    ...(b.adults != null
+      ? [
+          ["Ενήλικες", String(b.adults)] as [string, string],
+          ["Παιδιά", String(children)] as [string, string],
+          ["Ηλικίες παιδιών", agesText] as [string, string],
+        ]
+      : [["Άτομα", String(b.guests)] as [string, string]]),
+
+    ["Άφιξη", fd(b.checkIn) + " · 15:00"],
+    ["Αναχώρηση", fd(b.checkOut) + " · 11:00"],
+    ["Νύχτες", String(diffDays(b.checkIn, b.checkOut))],
+    ["Τιμή", b.rate === "flexible" ? "Ευέλικτη" : "Μη επιστρέψιμη"],
+    ["Σύνολο", eur(b.total)],
+
+    ...(b.source === "manual"
+      ? [
+          ["Προκαταβολή", eur(deposit)] as [string, string],
+          ["Υπόλοιπο", eur(balance)] as [string, string],
+          ["Σημειώσεις", b.notes?.trim() || "—"] as [string, string],
+        ]
+      : []),
+
+    ["Επιστροφή", b.refund != null ? eur(b.refund) : "—"],
+    ["Πηγή", b.source === "manual" ? "Χειροκίνητη" : "Online"],
+    ["Σύνδεσμος αξιολόγησης", `/review/${b.code}`],
   ];
 
-  const setStatus =
-    async (
-      status:
-        | "confirmed"
-        | "cancelled"
-    ) => {
-      const r =
-        await setFn({
-          data: {
-            id: b.id,
-            status,
-          },
-        });
+  const setStatus = async (status: "confirmed" | "cancelled") => {
+    const r = await setFn({
+      data: {
+        id: b.id,
+        status,
+      },
+    });
 
-      if (
-        "error" in r &&
-        r.error
-      ) {
-        alert(
-          "Οι ημερομηνίες δεν είναι πλέον διαθέσιμες."
-        );
-        return;
-      }
+    if ("error" in r && r.error) {
+      alert("Οι ημερομηνίες δεν είναι πλέον διαθέσιμες.");
+      return;
+    }
 
-      await s.reload();
-    };
+    await s.reload();
+  };
 
   return (
-    <div className="space-y-4 max-w-xl">
+    <div className="space-y-4 max-w-2xl">
       <button
         onClick={onBack}
         className="text-sm flex items-center gap-1"
       >
-        <ChevronLeft
-          size={16}
-        />
-
+        <ChevronLeft size={16} />
         Πίσω
       </button>
 
       <div className="panel p-5 text-sm">
-        {rows.map(
-          ([k, v]) => (
-            <div
-              key={k}
-              className="flex justify-between py-2 border-b last:border-0 gap-3"
-            >
-              <span className="text-muted-foreground">
-                {k}
-              </span>
-
-              <span className="text-right break-all">
-                {v}
-              </span>
-            </div>
-          )
-        )}
+        {rows.map(([k, v]) => (
+          <div
+            key={k}
+            className="flex justify-between py-2 border-b last:border-0 gap-3"
+          >
+            <span className="text-muted-foreground">{k}</span>
+            <span className="text-right break-words max-w-[65%]">{v}</span>
+          </div>
+        ))}
       </div>
 
-      {b.status ===
-      "confirmed" ? (
-        <button
-          className="btn-line"
-          onClick={() =>
-            setStatus(
-              "cancelled"
-            )
-          }
-        >
-          Ακύρωση κράτησης
-        </button>
-      ) : (
-        <button
-          className="btn-line"
-          onClick={() =>
-            setStatus(
-              "confirmed"
-            )
-          }
-        >
-          Επαναφορά κράτησης
-        </button>
+      {b.nightlyPrices && b.nightlyPrices.length > 0 && (
+        <div className="panel p-5">
+          <p className="font-medium mb-3">Τιμές ανά διανυκτέρευση</p>
+
+          <div className="space-y-2 text-sm">
+            {b.nightlyPrices.map((item) => (
+              <div
+                key={item.date}
+                className="flex justify-between border-b last:border-0 pb-2 last:pb-0"
+              >
+                <span className="text-muted-foreground">{fd(item.date)}</span>
+                <strong>{eur(item.price)}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
+
+      <div className="flex gap-3 flex-wrap">
+        {b.source === "manual" && (
+          <button
+            className="btn-gold"
+            onClick={() => setEditing(true)}
+          >
+            Επεξεργασία κράτησης
+          </button>
+        )}
+
+        {b.status === "confirmed" ? (
+          <button
+            className="btn-line"
+            onClick={() => setStatus("cancelled")}
+          >
+            Ακύρωση κράτησης
+          </button>
+        ) : (
+          <button
+            className="btn-line"
+            onClick={() => setStatus("confirmed")}
+          >
+            Επαναφορά κράτησης
+          </button>
+        )}
+      </div>
     </div>
   );
 }
