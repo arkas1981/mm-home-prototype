@@ -13,6 +13,11 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   guests: number;
+  adults: number | null;
+  child_ages: string | null;
+  nightly_prices: string | null;
+  deposit_amount: number | null;
+  notes: string | null;
   name: string;
   email: string;
   phone: string;
@@ -43,6 +48,11 @@ type OverrideRow = {
   min_nights: number | null;
   label: string;
   created_at: string;
+};
+
+type NightlyPriceInput = {
+  date: string;
+  price: number;
 };
 
 async function requireAdmin() {
@@ -327,11 +337,26 @@ export const adminDataD1 =
 type ManualBookingInput = {
   checkIn: string;
   checkOut: string;
-  guests: number;
+
   name: string;
   email: string;
   phone: string;
+
   rate: RateType;
+
+  adults?: number;
+  childAges?: number[];
+
+  nightlyPrices?: NightlyPriceInput[];
+
+  depositAmount?: number;
+  notes?: string;
+
+  /*
+   * Kept temporarily for compatibility
+   * with the current admin form.
+   */
+  guests?: number;
 };
 
 export const adminCreateBookingD1 =
@@ -371,19 +396,173 @@ export const adminCreateBookingD1 =
           };
         }
 
+        const dates =
+          nightsOf(
+            data.checkIn,
+            data.checkOut
+          );
+
+        const adults =
+          Math.max(
+            1,
+            Math.floor(
+              Number(
+                data.adults ??
+                  data.guests ??
+                  1
+              )
+            )
+          );
+
+        const childAges =
+          (
+            data.childAges ??
+            []
+          )
+            .map((age) =>
+              Math.floor(
+                Number(age)
+              )
+            )
+            .filter(
+              (age) =>
+                Number.isFinite(
+                  age
+                ) &&
+                age >= 0 &&
+                age <= 17
+            );
+
+        const guests =
+          adults +
+          childAges.length;
+
+        if (
+          guests < 1 ||
+          guests > 6
+        ) {
+          return {
+            error:
+              "guests" as const,
+          };
+        }
+
         const db =
           getDB();
 
         const overrides =
           await loadOverrides();
 
+        let nightlyPrices:
+          NightlyPriceInput[];
+
+        if (
+          data.nightlyPrices &&
+          data.nightlyPrices.length >
+            0
+        ) {
+          const incoming =
+            data.nightlyPrices.map(
+              (item) => ({
+                date:
+                  item.date,
+                price:
+                  Math.round(
+                    Number(
+                      item.price
+                    )
+                  ),
+              })
+            );
+
+          const valid =
+            incoming.length ===
+              dates.length &&
+            dates.every(
+              (date, index) =>
+                incoming[index]
+                  ?.date ===
+                  date &&
+                Number.isFinite(
+                  incoming[index]
+                    ?.price
+                ) &&
+                (
+                  incoming[index]
+                    ?.price ??
+                  0
+                ) >= 0
+            );
+
+          if (!valid) {
+            return {
+              error:
+                "prices" as const,
+            };
+          }
+
+          nightlyPrices =
+            incoming;
+        } else {
+          nightlyPrices =
+            dates.map(
+              (date) => {
+                const flex =
+                  priceForDate(
+                    date,
+                    overrides
+                  );
+
+                const price =
+                  data.rate ===
+                  "flexible"
+                    ? flex
+                    : Math.round(
+                        flex *
+                          (1 -
+                            NONREF_DISCOUNT)
+                      );
+
+                return {
+                  date,
+                  price,
+                };
+              }
+            );
+        }
+
         const total =
-          quote(
-            data.checkIn,
-            data.checkOut,
-            data.rate,
-            overrides
+          nightlyPrices.reduce(
+            (sum, item) =>
+              sum +
+              item.price,
+            0
           );
+
+        const depositAmount =
+          Math.max(
+            0,
+            Math.min(
+              total,
+              Math.round(
+                Number(
+                  data.depositAmount ??
+                    0
+                )
+              )
+            )
+          );
+
+        const notes =
+          (
+            data.notes ??
+            ""
+          )
+            .trim()
+            .slice(
+              0,
+              2000
+            );
 
         await db
           .prepare(`
@@ -393,6 +572,11 @@ export const adminCreateBookingD1 =
               check_in,
               check_out,
               guests,
+              adults,
+              child_ages,
+              nightly_prices,
+              deposit_amount,
+              notes,
               name,
               email,
               phone,
@@ -406,6 +590,7 @@ export const adminCreateBookingD1 =
             VALUES (
               ?, ?, ?, ?, ?,
               ?, ?, ?, ?, ?,
+              ?, ?, ?, ?, ?,
               'confirmed',
               'paid',
               'manual',
@@ -415,15 +600,48 @@ export const adminCreateBookingD1 =
           .bind(
             genId(),
             genCode(),
+
             data.checkIn,
             data.checkOut,
-            data.guests,
-            data.name.trim(),
+
+            guests,
+            adults,
+
+            JSON.stringify(
+              childAges
+            ),
+
+            JSON.stringify(
+              nightlyPrices
+            ),
+
+            depositAmount,
+            notes,
+
+            data.name
+              .trim()
+              .slice(
+                0,
+                100
+              ),
+
             data.email
               .trim()
-              .toLowerCase(),
-            data.phone.trim(),
+              .toLowerCase()
+              .slice(
+                0,
+                255
+              ),
+
+            data.phone
+              .trim()
+              .slice(
+                0,
+                30
+              ),
+
             data.rate,
+
             total
           )
           .run();
