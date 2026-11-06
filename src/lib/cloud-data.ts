@@ -27,6 +27,11 @@ export type BookingRow = {
   deposit_amount: number | null;
   notes: string | null;
 
+  access_code: string | null;
+  checkin_token: string | null;
+  terms_accepted_at: string | null;
+  terms_version: string | null;
+
   status: string;
   payment_status: string;
 
@@ -247,6 +252,34 @@ export const toBooking = (
       ? {
           notes:
             r.notes,
+        }
+      : {}),
+
+    ...(r.access_code
+      ? {
+          accessCode:
+            r.access_code,
+        }
+      : {}),
+
+    ...(r.checkin_token
+      ? {
+          checkinToken:
+            r.checkin_token,
+        }
+      : {}),
+
+    ...(r.terms_accepted_at
+      ? {
+          termsAcceptedAt:
+            r.terms_accepted_at,
+        }
+      : {}),
+
+    ...(r.terms_version
+      ? {
+          termsVersion:
+            r.terms_version,
         }
       : {}),
 
