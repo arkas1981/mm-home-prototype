@@ -1,4 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+} from "@tanstack/react-router";
+
 import {
   createContext,
   useCallback,
@@ -7,7 +11,11 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useServerFn } from "@tanstack/react-start";
+
+import {
+  useServerFn,
+} from "@tanstack/react-start";
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -28,6 +36,7 @@ import {
   adminRemoveBlockD1 as adminRemoveBlock,
   adminRemoveOverrideD1 as adminRemoveOverride,
   adminSetBookingStatusD1 as adminSetBookingStatus,
+  adminSetAccessCodeD1 as adminSetAccessCode,
 } from "@/lib/d1-admin.functions";
 
 import {
@@ -59,32 +68,59 @@ import {
   useStore,
 } from "@/lib/store";
 
-import { MonthCalendar } from "@/components/MonthCalendar";
-import { AdminReviews } from "@/components/AdminReviews";
-import { AdminManualBooking } from "@/components/AdminManualBooking";
-import { Logo } from "@/components/site";
-import { SLOGAN } from "@/lib/i18n";
-import { meta } from "@/lib/meta";
+import {
+  MonthCalendar,
+} from "@/components/MonthCalendar";
 
-export const Route = createFileRoute("/admin")({
-  head: () => ({
-    ...meta(
-      "Διαχείριση — MM Home",
-      "Πίνακας διαχείρισης MM Home."
-    ),
-    meta: [
+import {
+  AdminReviews,
+} from "@/components/AdminReviews";
+
+import {
+  AdminManualBooking,
+} from "@/components/AdminManualBooking";
+
+import {
+  Logo,
+} from "@/components/site";
+
+import {
+  SLOGAN,
+} from "@/lib/i18n";
+
+import {
+  meta,
+} from "@/lib/meta";
+
+export const Route =
+  createFileRoute(
+    "/admin"
+  )({
+    head: () => ({
       ...meta(
         "Διαχείριση — MM Home",
         "Πίνακας διαχείρισης MM Home."
-      ).meta,
-      {
-        name: "robots",
-        content: "noindex",
-      },
-    ],
-  }),
-  component: Admin,
-});
+      ),
+
+      meta: [
+        ...meta(
+          "Διαχείριση — MM Home",
+          "Πίνακας διαχείρισης MM Home."
+        ).meta,
+
+        {
+          name:
+            "robots",
+
+          content:
+            "noindex",
+        },
+      ],
+    }),
+
+    component:
+      Admin,
+  });
 
 const TABS = [
   "dashboard",
@@ -97,136 +133,265 @@ const TABS = [
   "emails",
 ] as const;
 
-type Tab = (typeof TABS)[number];
+type Tab =
+  (typeof TABS)[number];
 
-const TAB_LABELS: Record<Tab, string> = {
-  dashboard: "Πίνακας ελέγχου",
-  calendar: "Ημερολόγιο",
-  bookings: "Κρατήσεις",
-  pricing: "Τιμές",
-  blocks: "Μπλοκαρισμένες ημερομηνίες",
-  reviews: "Αξιολογήσεις",
-  notifications: "Ειδοποιήσεις",
-  emails: "Email",
-};
+const TAB_LABELS:
+  Record<
+    Tab,
+    string
+  > = {
+    dashboard:
+      "Πίνακας ελέγχου",
 
-const eur = (n: number) =>
-  `€${n.toLocaleString("el-GR")}`;
+    calendar:
+      "Ημερολόγιο",
 
-const fd = (iso: string) =>
+    bookings:
+      "Κρατήσεις",
+
+    pricing:
+      "Τιμές",
+
+    blocks:
+      "Μπλοκαρισμένες ημερομηνίες",
+
+    reviews:
+      "Αξιολογήσεις",
+
+    notifications:
+      "Ειδοποιήσεις",
+
+    emails:
+      "Email",
+  };
+
+const eur = (
+  n: number
+) =>
+  `€${n.toLocaleString(
+    "el-GR"
+  )}`;
+
+const fd = (
+  iso: string
+) =>
   new Date(
-    iso + "T12:00:00"
-  ).toLocaleDateString("el-GR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+    iso +
+      "T12:00:00"
+  ).toLocaleDateString(
+    "el-GR",
+    {
+      day:
+        "numeric",
+
+      month:
+        "short",
+
+      year:
+        "numeric",
+    }
+  );
 
 const feeOf = (
   gross: number,
   count: number
 ) =>
   Math.round(
-    gross * 0.015 +
-      count * 0.25
+    gross *
+      0.015 +
+      count *
+        0.25
   );
 
 type AdminState = {
-  bookings: Booking[];
-  blocks: Block[];
-  overrides: Override[];
-  reload: () => Promise<void>;
+  bookings:
+    Booking[];
+
+  blocks:
+    Block[];
+
+  overrides:
+    Override[];
+
+  reload:
+    () =>
+      Promise<void>;
 };
 
 const AdminCtx =
-  createContext<AdminState>({
-    bookings: [],
-    blocks: [],
-    overrides: [],
-    reload: async () => {},
-  });
+  createContext<AdminState>(
+    {
+      bookings:
+        [],
+
+      blocks:
+        [],
+
+      overrides:
+        [],
+
+      reload:
+        async () => {},
+    }
+  );
 
 const useAdmin = () =>
-  useContext(AdminCtx);
+  useContext(
+    AdminCtx
+  );
 
 function Admin() {
-  const [authed, setAuthed] =
-    useState<boolean | null>(null);
+  const [
+    authed,
+    setAuthed,
+  ] =
+    useState<
+      boolean |
+      null
+    >(
+      null
+    );
 
-  const [tab, setTab] =
-    useState<Tab>("dashboard");
+  const [
+    tab,
+    setTab,
+  ] =
+    useState<Tab>(
+      "dashboard"
+    );
 
-  const [detail, setDetail] =
-    useState<string | null>(null);
+  const [
+    detail,
+    setDetail,
+  ] =
+    useState<
+      string |
+      null
+    >(
+      null
+    );
 
   const fetchData =
-    useServerFn(adminData);
+    useServerFn(
+      adminData
+    );
 
   const sessionFn =
-    useServerFn(adminSession);
+    useServerFn(
+      adminSession
+    );
 
   const logoutFn =
-    useServerFn(adminLogout);
+    useServerFn(
+      adminLogout
+    );
 
-  const [data, setData] =
+  const [
+    data,
+    setData,
+  ] =
     useState<
-      Omit<AdminState, "reload">
+      Omit<
+        AdminState,
+        "reload"
+      >
     >({
-      bookings: [],
-      blocks: [],
-      overrides: [],
+      bookings:
+        [],
+
+      blocks:
+        [],
+
+      overrides:
+        [],
     });
 
   const reload =
-    useCallback(async () => {
-      const d =
-        await fetchData();
+    useCallback(
+      async () => {
+        const d =
+          await fetchData();
 
-      setData({
-        bookings: (
-          d.bookings as BookingRow[]
-        )
-          .filter(
-            (b) =>
-              b.status !== "pending"
-          )
-          .map(toBooking),
+        setData({
+          bookings:
+            (
+              d.bookings as BookingRow[]
+            )
+              .filter(
+                (
+                  b
+                ) =>
+                  b.status !==
+                    "pending"
+              )
+              .map(
+                toBooking
+              ),
 
-        blocks:
-          d.blocks.map(toBlock),
+          blocks:
+            d.blocks.map(
+              toBlock
+            ),
 
-        overrides:
-          d.overrides.map(
-            toOverride
-          ),
-      });
-    }, [fetchData]);
+          overrides:
+            d.overrides.map(
+              toOverride
+            ),
+        });
+      },
+      [
+        fetchData,
+      ]
+    );
 
   const check =
-    useCallback(async () => {
-      try {
-        const session =
-          await sessionFn();
+    useCallback(
+      async () => {
+        try {
+          const session =
+            await sessionFn();
 
-        if (
-          !session.authenticated
-        ) {
-          setAuthed(false);
-          return;
+          if (
+            !session.authenticated
+          ) {
+            setAuthed(
+              false
+            );
+
+            return;
+          }
+
+          setAuthed(
+            true
+          );
+
+          await reload();
+        } catch {
+          setAuthed(
+            false
+          );
         }
+      },
+      [
+        reload,
+        sessionFn,
+      ]
+    );
 
-        setAuthed(true);
-        await reload();
-      } catch {
-        setAuthed(false);
-      }
-    }, [reload, sessionFn]);
+  useEffect(
+    () => {
+      check();
+    },
+    [
+      check,
+    ]
+  );
 
-  useEffect(() => {
-    check();
-  }, [check]);
-
-  if (authed === null) {
+  if (
+    authed ===
+    null
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         Φόρτωση…
@@ -234,10 +399,14 @@ function Admin() {
     );
   }
 
-  if (!authed) {
+  if (
+    !authed
+  ) {
     return (
       <AdminLogin
-        onIn={check}
+        onIn={
+          check
+        }
       />
     );
   }
@@ -253,7 +422,11 @@ function Admin() {
         <header className="sticky top-0 z-30 bg-background border-b">
           <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Logo size={32} />
+              <Logo
+                size={
+                  32
+                }
+              />
 
               <span className="font-serif text-xl">
                 MM Home Admin
@@ -273,44 +446,73 @@ function Admin() {
               </Link>
 
               <button
-                onClick={async () => {
-                  await logoutFn();
-                  setAuthed(false);
-                }}
+                onClick={
+                  async () => {
+                    await logoutFn();
+
+                    setAuthed(
+                      false
+                    );
+                  }
+                }
                 aria-label="Αποσύνδεση"
                 title="Αποσύνδεση"
               >
-                <LogOut size={18} />
+                <LogOut
+                  size={
+                    18
+                  }
+                />
               </button>
             </div>
           </div>
 
           <nav className="mx-auto max-w-6xl px-4 flex gap-1 overflow-x-auto pb-2">
-            {TABS.map((t) => (
-              <button
-                key={t}
-                onClick={() => {
-                  setTab(t);
-                  setDetail(null);
-                }}
-                className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
-                  tab === t
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-accent"
-                }`}
-              >
-                {TAB_LABELS[t]}
-              </button>
-            ))}
+            {TABS.map(
+              (
+                t
+              ) => (
+                <button
+                  key={
+                    t
+                  }
+                  onClick={() => {
+                    setTab(
+                      t
+                    );
+
+                    setDetail(
+                      null
+                    );
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap ${
+                    tab ===
+                    t
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:bg-accent"
+                  }`}
+                >
+                  {
+                    TAB_LABELS[
+                      t
+                    ]
+                  }
+                </button>
+              )
+            )}
           </nav>
         </header>
 
         <div className="mx-auto max-w-6xl px-4 py-6">
           {detail ? (
             <BookingDetail
-              id={detail}
+              id={
+                detail
+              }
               onBack={() =>
-                setDetail(null)
+                setDetail(
+                  null
+                )
               }
             />
           ) : (
@@ -373,66 +575,113 @@ function Admin() {
 function AdminLogin({
   onIn,
 }: {
-  onIn: () => Promise<void>;
+  onIn:
+    () =>
+      Promise<void>;
 }) {
   const login =
-    useServerFn(adminLogin);
+    useServerFn(
+      adminLogin
+    );
 
-  const [email, setEmail] =
-    useState("");
+  const [
+    email,
+    setEmail,
+  ] =
+    useState(
+      ""
+    );
 
-  const [pw, setPw] =
-    useState("");
+  const [
+    pw,
+    setPw,
+  ] =
+    useState(
+      ""
+    );
 
-  const [err, setErr] =
-    useState("");
+  const [
+    err,
+    setErr,
+  ] =
+    useState(
+      ""
+    );
 
-  const [busy, setBusy] =
-    useState(false);
+  const [
+    busy,
+    setBusy,
+  ] =
+    useState(
+      false
+    );
 
-  const submit = async (
-    e: React.FormEvent
-  ) => {
-    e.preventDefault();
+  const submit =
+    async (
+      e:
+        React.FormEvent
+    ) => {
+      e.preventDefault();
 
-    setBusy(true);
-    setErr("");
+      setBusy(
+        true
+      );
 
-    try {
-      const result =
-        await login({
-          data: {
-            email:
-              email.trim(),
-            password: pw,
-          },
-        });
+      setErr(
+        ""
+      );
 
-      if (!result.ok) {
+      try {
+        const result =
+          await login({
+            data: {
+              email:
+                email.trim(),
+
+              password:
+                pw,
+            },
+          });
+
+        if (
+          !result.ok
+        ) {
+          setErr(
+            "Λάθος email ή κωδικός."
+          );
+
+          setBusy(
+            false
+          );
+
+          return;
+        }
+
+        await onIn();
+      } catch {
         setErr(
-          "Λάθος email ή κωδικός."
+          "Δεν ήταν δυνατή η σύνδεση."
         );
-        setBusy(false);
-        return;
       }
 
-      await onIn();
-    } catch {
-      setErr(
-        "Δεν ήταν δυνατή η σύνδεση."
+      setBusy(
+        false
       );
-    }
-
-    setBusy(false);
-  };
+    };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5">
       <form
-        onSubmit={submit}
+        onSubmit={
+          submit
+        }
         className="panel p-8 w-full max-w-sm text-center space-y-4"
       >
-        <Logo size={56} />
+        <Logo
+          size={
+            56
+          }
+        />
 
         <h1 className="text-3xl">
           Διαχείριση MM Home
@@ -443,7 +692,9 @@ function AdminLogin({
           type="email"
           autoComplete="username"
           placeholder="Email"
-          value={email}
+          value={
+            email
+          }
           onChange={(e) =>
             setEmail(
               e.target.value
@@ -457,7 +708,9 @@ function AdminLogin({
           type="password"
           autoComplete="current-password"
           placeholder="Κωδικός"
-          value={pw}
+          value={
+            pw
+          }
           onChange={(e) =>
             setPw(
               e.target.value
@@ -468,15 +721,23 @@ function AdminLogin({
 
         {err && (
           <p className="text-sm text-destructive">
-            {err}
+            {
+              err
+            }
           </p>
         )}
 
         <button
           className="btn-gold w-full"
-          disabled={busy}
+          disabled={
+            busy
+          }
         >
-          <Lock size={14} />
+          <Lock
+            size={
+              14
+            }
+          />
 
           {busy
             ? "Σύνδεση..."
@@ -492,41 +753,60 @@ const Card = ({
   value,
   sub,
 }: {
-  label: string;
-  value: string;
-  sub?: string;
+  label:
+    string;
+
+  value:
+    string;
+
+  sub?:
+    string;
 }) => (
   <div className="panel p-4">
     <p className="text-xs uppercase tracking-widest text-muted-foreground">
-      {label}
+      {
+        label
+      }
     </p>
 
     <p className="font-serif text-3xl mt-1">
-      {value}
+      {
+        value
+      }
     </p>
 
     {sub && (
       <p className="text-xs text-muted-foreground">
-        {sub}
+        {
+          sub
+        }
       </p>
     )}
   </div>
 );
 
 function revenueOf(
-  b: Booking
+  b:
+    Booking
 ) {
   return b.status ===
     "confirmed"
     ? b.total
     : b.total -
-        (b.refund ?? 0);
+        (
+          b.refund ??
+          0
+        );
 }
 
 function Dashboard() {
-  const s = useAdmin();
+  const s =
+    useAdmin();
 
-  const [year, setYear] =
+  const [
+    year,
+    setYear,
+  ] =
     useState(
       new Date().getFullYear()
     );
@@ -535,11 +815,19 @@ function Dashboard() {
     useMemo(
       () =>
         Array.from(
-          { length: 12 },
-          (_, m) => {
+          {
+            length:
+              12,
+          },
+          (
+            _,
+            m
+          ) => {
             const inMonth =
               s.bookings.filter(
-                (b) => {
+                (
+                  b
+                ) => {
                   const d =
                     new Date(
                       b.checkIn +
@@ -557,24 +845,33 @@ function Dashboard() {
 
             const gross =
               inMonth.reduce(
-                (a, b) =>
+                (
+                  a,
+                  b
+                ) =>
                   a +
-                  revenueOf(b),
+                  revenueOf(
+                    b
+                  ),
                 0
               );
 
             const days =
               new Date(
                 year,
-                m + 1,
+                m +
+                  1,
                 0
               ).getDate();
 
-            let booked = 0;
+            let booked =
+              0;
 
             for (
-              let d = 1;
-              d <= days;
+              let d =
+                1;
+              d <=
+              days;
               d++
             ) {
               if (
@@ -586,9 +883,12 @@ function Dashboard() {
                       d
                     )
                   ),
+
                   s.bookings,
+
                   []
-                ) === "booked"
+                ) ===
+                "booked"
               ) {
                 booked++;
               }
@@ -596,69 +896,101 @@ function Dashboard() {
 
             const conf =
               inMonth.filter(
-                (b) =>
+                (
+                  b
+                ) =>
                   b.status ===
                   "confirmed"
               );
 
             return {
               m,
+
               gross,
+
               fees:
                 feeOf(
                   gross,
                   inMonth.length
                 ),
+
               count:
                 conf.length,
+
               nights:
                 booked,
+
               occ:
                 Math.round(
-                  (booked /
-                    days) *
+                  (
+                    booked /
+                    days
+                  ) *
                     100
                 ),
             };
           }
         ),
-      [s.bookings, year]
+      [
+        s.bookings,
+        year,
+      ]
     );
 
   const tot =
     months.reduce(
-      (a, x) => ({
+      (
+        a,
+        x
+      ) => ({
         gross:
           a.gross +
           x.gross,
+
         fees:
           a.fees +
           x.fees,
+
         count:
           a.count +
           x.count,
+
         nights:
           a.nights +
           x.nights,
       }),
+
       {
-        gross: 0,
-        fees: 0,
-        count: 0,
-        nights: 0,
+        gross:
+          0,
+
+        fees:
+          0,
+
+        count:
+          0,
+
+        nights:
+          0,
       }
     );
 
   const daysYear =
-    year % 4 === 0
+    year %
+      4 ===
+    0
       ? 366
       : 365;
 
   const max =
     Math.max(
       1,
+
       ...months.map(
-        (x) => x.gross
+        (
+          x
+        ) =>
+          x.gross
       )
     );
 
@@ -668,7 +1000,8 @@ function Dashboard() {
         <button
           onClick={() =>
             setYear(
-              year - 1
+              year -
+                1
             )
           }
         >
@@ -676,13 +1009,16 @@ function Dashboard() {
         </button>
 
         <h2 className="text-3xl">
-          {year}
+          {
+            year
+          }
         </h2>
 
         <button
           onClick={() =>
             setYear(
-              year + 1
+              year +
+                1
             )
           }
         >
@@ -693,46 +1029,58 @@ function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Card
           label="Μικτά"
-          value={eur(
-            tot.gross
-          )}
+          value={
+            eur(
+              tot.gross
+            )
+          }
         />
 
         <Card
           label="Προμήθειες"
-          value={eur(
-            tot.fees
-          )}
+          value={
+            eur(
+              tot.fees
+            )
+          }
           sub="προσωρινός υπολογισμός"
         />
 
         <Card
           label="Καθαρά"
-          value={eur(
-            tot.gross -
-              tot.fees
-          )}
+          value={
+            eur(
+              tot.gross -
+                tot.fees
+            )
+          }
         />
 
         <Card
           label="Κρατήσεις"
-          value={String(
-            tot.count
-          )}
+          value={
+            String(
+              tot.count
+            )
+          }
         />
 
         <Card
           label="Νύχτες"
-          value={String(
-            tot.nights
-          )}
+          value={
+            String(
+              tot.nights
+            )
+          }
         />
 
         <Card
           label="Πληρότητα"
           value={`${Math.round(
-            (tot.nights /
-              daysYear) *
+            (
+              tot.nights /
+              daysYear
+            ) *
               100
           )}%`}
           sub="ετήσια"
@@ -746,29 +1094,42 @@ function Dashboard() {
 
         <div className="flex items-end gap-2 h-44">
           {months.map(
-            (x) => (
+            (
+              x
+            ) => (
               <div
-                key={x.m}
+                key={
+                  x.m
+                }
                 className="flex-1 flex flex-col items-center gap-1 h-full justify-end"
               >
                 <span className="text-[10px] text-muted-foreground">
-                  {x.occ}%
+                  {
+                    x.occ
+                  }
+                  %
                 </span>
 
                 <div
                   className="w-full rounded-t bg-primary/70"
                   style={{
-                    height: `${
-                      (x.gross /
-                        max) *
-                      100
-                    }%`,
+                    height:
+                      `${
+                        (
+                          x.gross /
+                          max
+                        ) *
+                        100
+                      }%`,
+
                     minHeight:
                       2,
                   }}
-                  title={eur(
-                    x.gross
-                  )}
+                  title={
+                    eur(
+                      x.gross
+                    )
+                  }
                 />
 
                 <span className="text-[10px]">
@@ -801,22 +1162,34 @@ function Dashboard() {
                 "Κρατήσεις",
                 "Νύχτες",
                 "Πληρότητα",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="p-3 font-normal"
-                >
-                  {h}
-                </th>
-              ))}
+              ].map(
+                (
+                  h
+                ) => (
+                  <th
+                    key={
+                      h
+                    }
+                    className="p-3 font-normal"
+                  >
+                    {
+                      h
+                    }
+                  </th>
+                )
+              )}
             </tr>
           </thead>
 
           <tbody>
             {months.map(
-              (x) => (
+              (
+                x
+              ) => (
                 <tr
-                  key={x.m}
+                  key={
+                    x.m
+                  }
                   className="border-t"
                 >
                   <td className="p-3">
@@ -833,34 +1206,47 @@ function Dashboard() {
                   </td>
 
                   <td className="p-3">
-                    {eur(
-                      x.gross
-                    )}
+                    {
+                      eur(
+                        x.gross
+                      )
+                    }
                   </td>
 
                   <td className="p-3">
-                    {eur(
-                      x.fees
-                    )}
-                  </td>
-
-                  <td className="p-3">
-                    {eur(
-                      x.gross -
+                    {
+                      eur(
                         x.fees
-                    )}
+                      )
+                    }
                   </td>
 
                   <td className="p-3">
-                    {x.count}
+                    {
+                      eur(
+                        x.gross -
+                          x.fees
+                      )
+                    }
                   </td>
 
                   <td className="p-3">
-                    {x.nights}
+                    {
+                      x.count
+                    }
                   </td>
 
                   <td className="p-3">
-                    {x.occ}%
+                    {
+                      x.nights
+                    }
+                  </td>
+
+                  <td className="p-3">
+                    {
+                      x.occ
+                    }
+                    %
                   </td>
                 </tr>
               )
@@ -875,21 +1261,34 @@ function Dashboard() {
 function AdminCalendar({
   onOpen,
 }: {
-  onOpen: (
-    id: string
-  ) => void;
+  onOpen:
+    (
+      id:
+        string
+    ) =>
+      void;
 }) {
-  const s = useAdmin();
+  const s =
+    useAdmin();
 
-  const [off, setOff] =
-    useState(0);
+  const [
+    off,
+    setOff,
+  ] =
+    useState(
+      0
+    );
 
-  const d = new Date();
+  const d =
+    new Date();
 
-  d.setDate(1);
+  d.setDate(
+    1
+  );
 
   d.setMonth(
-    d.getMonth() + off
+    d.getMonth() +
+      off
   );
 
   const palette = [
@@ -905,25 +1304,31 @@ function AdminCalendar({
 
   const confirmedBookings =
     s.bookings.filter(
-      (b) =>
+      (
+        b
+      ) =>
         b.status ===
         "confirmed"
     );
 
   const colourForBooking =
     (
-      bookingId: string
+      bookingId:
+        string
     ) => {
       const index =
         confirmedBookings.findIndex(
-          (b) =>
+          (
+            b
+          ) =>
             b.id ===
             bookingId
         );
 
       return palette[
         (
-          index >= 0
+          index >=
+          0
             ? index
             : 0
         ) %
@@ -931,220 +1336,254 @@ function AdminCalendar({
       ];
     };
 
-  const info = (
-    iso: string
-  ) => {
-    const block =
-      s.blocks.some(
-        (b) =>
-          iso >=
-            b.start &&
-          iso <=
-            b.end
-      );
+  const info =
+    (
+      iso:
+        string
+    ) => {
+      const block =
+        s.blocks.some(
+          (
+            b
+          ) =>
+            iso >=
+              b.start &&
+            iso <=
+              b.end
+        );
 
-    if (block) {
-      return {
-        className:
-          "bg-blocked text-muted-foreground",
+      if (
+        block
+      ) {
+        return {
+          className:
+            "bg-blocked text-muted-foreground",
 
-        mark:
-          "block",
+          mark:
+            "block",
 
-        title:
-          "Μπλοκαρισμένο",
-      };
-    }
+          title:
+            "Μπλοκαρισμένο",
+        };
+      }
 
-    const arriving =
-      confirmedBookings.find(
-        (b) =>
-          b.checkIn ===
-          iso
-      );
+      const arriving =
+        confirmedBookings.find(
+          (
+            b
+          ) =>
+            b.checkIn ===
+            iso
+        );
 
-    const departing =
-      confirmedBookings.find(
-        (b) =>
-          b.checkOut ===
-          iso
-      );
+      const departing =
+        confirmedBookings.find(
+          (
+            b
+          ) =>
+            b.checkOut ===
+            iso
+        );
 
-    const staying =
-      confirmedBookings.find(
-        (b) =>
-          iso >=
-            b.checkIn &&
-          iso <
-            b.checkOut
-      );
+      const staying =
+        confirmedBookings.find(
+          (
+            b
+          ) =>
+            iso >=
+              b.checkIn &&
+            iso <
+              b.checkOut
+        );
 
-    const flex =
-      flexRateFor(
-        iso,
-        s.overrides
-      );
+      const flex =
+        flexRateFor(
+          iso,
+          s.overrides
+        );
 
-    if (
-      arriving &&
-      departing &&
-      arriving.id !==
-        departing.id
-    ) {
-      const left =
-        colourForBooking(
+      if (
+        arriving &&
+        departing &&
+        arriving.id !==
           departing.id
-        );
+      ) {
+        const left =
+          colourForBooking(
+            departing.id
+          );
 
-      const right =
-        colourForBooking(
-          arriving.id
-        );
+        const right =
+          colourForBooking(
+            arriving.id
+          );
+
+        return {
+          className:
+            "text-foreground",
+
+          style: {
+            background:
+              `linear-gradient(90deg, ${left} 0%, ${left} 50%, ${right} 50%, ${right} 100%)`,
+          },
+
+          mark:
+            "out · in",
+
+          title:
+            `Αναχώρηση: ${departing.name} · Άφιξη: ${arriving.name}`,
+        };
+      }
+
+      if (
+        arriving
+      ) {
+        const colour =
+          colourForBooking(
+            arriving.id
+          );
+
+        return {
+          className:
+            "text-foreground",
+
+          style: {
+            background:
+              `linear-gradient(90deg, transparent 0%, transparent 50%, ${colour} 50%, ${colour} 100%)`,
+          },
+
+          mark:
+            "in",
+
+          title:
+            `Άφιξη: ${arriving.name}`,
+        };
+      }
+
+      if (
+        staying
+      ) {
+        const colour =
+          colourForBooking(
+            staying.id
+          );
+
+        return {
+          className:
+            "text-foreground",
+
+          style: {
+            backgroundColor:
+              colour,
+          },
+
+          mark:
+            "",
+
+          title:
+            `Κράτηση: ${staying.name}`,
+        };
+      }
+
+      if (
+        departing
+      ) {
+        const colour =
+          colourForBooking(
+            departing.id
+          );
+
+        return {
+          className:
+            "text-foreground",
+
+          style: {
+            background:
+              `linear-gradient(90deg, ${colour} 0%, ${colour} 50%, transparent 50%, transparent 100%)`,
+          },
+
+          mark:
+            "out",
+
+          title:
+            `Αναχώρηση: ${departing.name}`,
+        };
+      }
 
       return {
         className:
-          "text-foreground",
-
-        style: {
-          background:
-            `linear-gradient(90deg, ${left} 0%, ${left} 50%, ${right} 50%, ${right} 100%)`,
-        },
+          "bg-card hover:bg-accent border",
 
         mark:
-          "out · in",
+          `€${flex}`,
 
         title:
-          `Αναχώρηση: ${departing.name} · Άφιξη: ${arriving.name}`,
+          "Διαθέσιμο",
       };
-    }
+    };
 
-    if (arriving) {
-      const colour =
-        colourForBooking(
+  const pick =
+    (
+      iso:
+        string
+    ) => {
+      const arriving =
+        confirmedBookings.find(
+          (
+            b
+          ) =>
+            b.checkIn ===
+            iso
+        );
+
+      if (
+        arriving
+      ) {
+        onOpen(
           arriving.id
         );
 
-      return {
-        className:
-          "text-foreground",
+        return;
+      }
 
-        style: {
-          background:
-            `linear-gradient(90deg, transparent 0%, transparent 50%, ${colour} 50%, ${colour} 100%)`,
-        },
+      const staying =
+        confirmedBookings.find(
+          (
+            b
+          ) =>
+            iso >=
+              b.checkIn &&
+            iso <
+              b.checkOut
+        );
 
-        mark:
-          "in",
-
-        title:
-          `Άφιξη: ${arriving.name}`,
-      };
-    }
-
-    if (staying) {
-      const colour =
-        colourForBooking(
+      if (
+        staying
+      ) {
+        onOpen(
           staying.id
         );
 
-      return {
-        className:
-          "text-foreground",
+        return;
+      }
 
-        style: {
-          backgroundColor:
-            colour,
-        },
-
-        mark:
-          "",
-
-        title:
-          `Κράτηση: ${staying.name}`,
-      };
-    }
-
-    if (departing) {
-      const colour =
-        colourForBooking(
-          departing.id
+      const departing =
+        confirmedBookings.find(
+          (
+            b
+          ) =>
+            b.checkOut ===
+            iso
         );
 
-      return {
-        className:
-          "text-foreground",
-
-        style: {
-          background:
-            `linear-gradient(90deg, ${colour} 0%, ${colour} 50%, transparent 50%, transparent 100%)`,
-        },
-
-        mark:
-          "out",
-
-        title:
-          `Αναχώρηση: ${departing.name}`,
-      };
-    }
-
-    return {
-      className:
-        "bg-card hover:bg-accent border",
-
-      mark:
-        `€${flex}`,
-
-      title:
-        "Διαθέσιμο",
+      if (
+        departing
+      ) {
+        onOpen(
+          departing.id
+        );
+      }
     };
-  };
-
-  const pick = (
-    iso: string
-  ) => {
-    const arriving =
-      confirmedBookings.find(
-        (b) =>
-          b.checkIn ===
-          iso
-      );
-
-    if (arriving) {
-      onOpen(
-        arriving.id
-      );
-      return;
-    }
-
-    const staying =
-      confirmedBookings.find(
-        (b) =>
-          iso >=
-            b.checkIn &&
-          iso <
-            b.checkOut
-      );
-
-    if (staying) {
-      onOpen(
-        staying.id
-      );
-      return;
-    }
-
-    const departing =
-      confirmedBookings.find(
-        (b) =>
-          b.checkOut ===
-          iso
-      );
-
-    if (departing) {
-      onOpen(
-        departing.id
-      );
-    }
-  };
 
   return (
     <div className="panel p-6 max-w-4xl">
@@ -1152,7 +1591,8 @@ function AdminCalendar({
         <button
           onClick={() =>
             setOff(
-              off - 1
+              off -
+                1
             )
           }
         >
@@ -1162,7 +1602,8 @@ function AdminCalendar({
         <button
           onClick={() =>
             setOff(
-              off + 1
+              off +
+                1
             )
           }
         >
@@ -1173,13 +1614,17 @@ function AdminCalendar({
       <MonthCalendar
         year={
           d.getFullYear()
-      }
+        }
         month={
           d.getMonth()
         }
         locale="el-GR"
-        info={info}
-        onPick={pick}
+        info={
+          info
+        }
+        onPick={
+          pick
+        }
       />
 
       <div className="flex gap-4 mt-5 text-xs flex-wrap">
@@ -1210,73 +1655,184 @@ function AdminCalendar({
 function Bookings({
   onOpen,
 }: {
-  onOpen: (
-    id: string
-  ) => void;
+  onOpen:
+    (
+      id:
+        string
+    ) =>
+      void;
 }) {
-  const s = useAdmin();
-  const [show, setShow] = useState(false);
-  const list = [...s.bookings].sort((a, b) =>
-    b.checkIn.localeCompare(a.checkIn)
-  );
+  const s =
+    useAdmin();
+
+  const [
+    show,
+    setShow,
+  ] =
+    useState(
+      false
+    );
+
+  const list =
+    [
+      ...s.bookings,
+    ].sort(
+      (
+        a,
+        b
+      ) =>
+        b.checkIn.localeCompare(
+          a.checkIn
+        )
+    );
 
   return (
     <div className="space-y-4">
       <button
         className="btn-gold"
-        onClick={() => setShow(!show)}
+        onClick={() =>
+          setShow(
+            !show
+          )
+        }
       >
-        {show ? "Κλείηνο" : "+ Ηειροκίνητη κράτηση"}
+        {show
+          ? "Κλείσιμο"
+          : "+ Χειροκίνητη κράτηση"}
       </button>
 
       {show && (
         <AdminManualBooking
-          bookings={s.bookings}
-          blocks={s.blocks}
-          overrides={s.overrides}
-          reload={s.reload}
-          onDone={() => setShow(false)}
+          bookings={
+            s.bookings
+          }
+          blocks={
+            s.blocks
+          }
+          overrides={
+            s.overrides
+          }
+          reload={
+            s.reload
+          }
+          onDone={() =>
+            setShow(
+              false
+            )
+          }
         />
       )}
 
       <div className="space-y-2">
-        {list.map((b) => {
-          const children = b.childAges?.length ?? 0;
+        {list.map(
+          (
+            b
+          ) => {
+            const children =
+              b.childAges
+                ?.length ??
+              0;
 
-          return (
-            <button
-              key={b.id}
-              onClick={() => onOpen(b.id)}
-              className="panel p-4 w-full text-left flex justify-between items-center gap-3"
-            >
-              <div>
-                <p className="font-medium">{b.name}</p>
+            return (
+              <button
+                key={
+                  b.id
+                }
+                onClick={() =>
+                  onOpen(
+                    b.id
+                  )
+                }
+                className="panel p-4 w-full text-left flex justify-between items-center gap-3"
+              >
+                <div>
+                  <p className="font-medium">
+                    {
+                      b.name
+                    }
+                  </p>
 
-                <p className="text-xs text-muted-foreground">
-                  {b.code} · {fd(b.checkIn)} → {fd(b.checkOut)}{" "}
-                  {b.adults != null ? (
-                    <>
-                      · {b.adults} {b.adults === 1 ? "ενήλικας" : "ενήλικες"} ·{" "}
-                      {children} {children === 1 ? "παδί" : "παιδιά"}
-                    </>
-                  ) : (
-                    <>· {b.guests} άτομα</>
-                  )}
-                  {" · "}
-                  {b.rate === "flexible" ? "Ευέλικτη" : "Μη επιστρέψιμη"}
-                  {b.source === "manual" ? " · χειροκίνητη" : " · online"}
-                </p>
-              </div>
+                  <p className="text-xs text-muted-foreground">
+                    {
+                      b.code
+                    }{" "}
+                    ·{" "}
+                    {
+                      fd(
+                        b.checkIn
+                      )
+                    }{" "}
+                    →{" "}
+                    {
+                      fd(
+                        b.checkOut
+                      )
+                    }{" "}
 
-              <div className="text-right">
-                <p className="font-serif text-xl">{eur(b.total)}</p>
-                <p className="text-xs text-olive">
-                  {b.status === "confirmed" ? "Επιβεβαιωμένη" : "Ακυρωμένη"}
-                </p>
-              </div>
-            </button>
-          );
-        })}
+                    {b.adults !=
+                    null ? (
+                      <>
+                        ·{" "}
+                        {
+                          b.adults
+                        }{" "}
+                        {b.adults ===
+                        1
+                          ? "ενήλικας"
+                          : "ενήλικες"}{" "}
+                        ·{" "}
+                        {
+                          children
+                        }{" "}
+                        {children ===
+                        1
+                          ? "παιδί"
+                          : "παιδιά"}
+                      </>
+                    ) : (
+                      <>
+                        ·{" "}
+                        {
+                          b.guests
+                        }{" "}
+                        άτομα
+                      </>
+                    )}
+
+                    {" · "}
+
+                    {b.rate ===
+                    "flexible"
+                      ? "Ευέλικτη"
+                      : "Μη επιστρέψιμη"}
+
+                    {b.source ===
+                    "manual"
+                      ? " · χειροκίνητη"
+                      : " · online"}
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <p className="font-serif text-xl">
+                    {
+                      eur(
+                        b.total
+                      )
+                    }
+                  </p>
+
+                  <p className="text-xs text-olive">
+                    {b.status ===
+                    "confirmed"
+                      ? "Επιβεβαιωμένη"
+                      : "Ακυρωμένη"}
+                  </p>
+                </div>
+              </button>
+            );
+          }
+        )}
       </div>
     </div>
   );
@@ -1286,162 +1842,681 @@ function BookingDetail({
   id,
   onBack,
 }: {
-  id: string;
-  onBack: () => void;
+  id:
+    string;
+
+  onBack:
+    () =>
+      void;
 }) {
-  const s = useAdmin();
-  const [editing, setEditing] = useState(false);
-  const setFn = useServerFn(adminSetBookingStatus);
+  const s =
+    useAdmin();
 
-  const b = s.bookings.find((x) => x.id === id);
+  const [
+    editing,
+    setEditing,
+  ] =
+    useState(
+      false
+    );
 
-  if (!b) {
+  const setFn =
+    useServerFn(
+      adminSetBookingStatus
+    );
+
+  const setAccessCodeFn =
+    useServerFn(
+      adminSetAccessCode
+    );
+
+  const b =
+    s.bookings.find(
+      (
+        x
+      ) =>
+        x.id ===
+        id
+    );
+
+  const [
+    accessCode,
+    setAccessCode,
+  ] =
+    useState(
+      ""
+    );
+
+  const [
+    savingAccessCode,
+    setSavingAccessCode,
+  ] =
+    useState(
+      false
+    );
+
+  useEffect(
+    () => {
+      setAccessCode(
+        b?.accessCode ??
+          ""
+      );
+    },
+    [
+      b?.accessCode,
+      b?.id,
+    ]
+  );
+
+  if (
+    !b
+  ) {
     return null;
   }
 
-  if (editing && b.source === "manual") {
+  if (
+    editing &&
+    b.source ===
+      "manual"
+  ) {
     return (
       <div className="space-y-4 max-w-2xl">
         <button
-          onClick={() => setEditing(false)}
+          onClick={() =>
+            setEditing(
+              false
+            )
+          }
           className="text-sm flex items-center gap-1"
         >
-          <ChevronLeft size={16} />
+          <ChevronLeft
+            size={
+              16
+            }
+          />
+
           Πίσω στα στοιχεία κράτησης
         </button>
 
         <AdminManualBooking
-          booking={b}
-          bookings={s.bookings}
-          blocks={s.blocks}
-          overrides={s.overrides}
-          reload={s.reload}
-          onDone={() => setEditing(false)}
+          booking={
+            b
+          }
+          bookings={
+            s.bookings
+          }
+          blocks={
+            s.blocks
+          }
+          overrides={
+            s.overrides
+          }
+          reload={
+            s.reload
+          }
+          onDone={() =>
+            setEditing(
+              false
+            )
+          }
         />
       </div>
     );
   }
 
-  const children = b.childAges?.length ?? 0;
+  const children =
+    b.childAges
+      ?.length ??
+    0;
+
   const agesText =
-    b.childAges && b.childAges.length > 0
-      ? b.childAges.map((age) => String(age)).join(", ")
+    b.childAges &&
+    b.childAges.length >
+      0
+      ? b.childAges
+          .map(
+            (
+              age
+            ) =>
+              String(
+                age
+              )
+          )
+          .join(
+            ", "
+          )
       : "—";
 
-  const deposit = b.depositAmount ?? 0;
-  const balance = Math.max(0, b.total - deposit);
+  const deposit =
+    b.depositAmount ??
+    0;
 
-  const rows: [string, string][] = [
-    ["Κωδικός", b.code],
-    ["Κατάσταση", b.status === "confirmed" ? "Επιβεβαιωμένη" : "Ακυρωμένη"],
-    ["Επισκέπτης", b.name],
-    ["Email", b.email || "—"],
-    ["Κινητό", b.phone || "—"],
+  const balance =
+    Math.max(
+      0,
+      b.total -
+        deposit
+    );
 
-    ...(b.adults != null
-      ? [
-          ["Ενήλικες", String(b.adults)] as [string, string],
-          ["Παιδιά", String(children)] as [string, string],
-          ["Ηλικίες παιδιών", agesText] as [string, string],
-        ]
-      : [["Άτομα", String(b.guests)] as [string, string]]),
+  const rows:
+    [
+      string,
+      string,
+    ][] = [
+      [
+        "Κωδικός",
+        b.code,
+      ],
 
-    ["Άφιξη", fd(b.checkIn) + " · 15:00"],
-    ["Αναχώρηση", fd(b.checkOut) + " · 11:00"],
-    ["Νύχτες", String(diffDays(b.checkIn, b.checkOut))],
-    ["Τιμή", b.rate === "flexible" ? "Ευέλικτη" : "Μη επιστρέψιμη"],
-    ["Σύνολο", eur(b.total)],
+      [
+        "Κατάσταση",
 
-    ...(b.source === "manual"
-      ? [
-          ["Προκαταβολή", eur(deposit)] as [string, string],
-          ["Υπόλοιπο", eur(balance)] as [string, string],
-          ["Σημειώσεις", b.notes?.trim() || "—"] as [string, string],
-        ]
-      : []),
+        b.status ===
+        "confirmed"
+          ? "Επιβεβαιωμένη"
+          : "Ακυρωμένη",
+      ],
 
-    ["Επιστροφή", b.refund != null ? eur(b.refund) : "—"],
-    ["Πηγή", b.source === "manual" ? "Χειροκίνητη" : "Online"],
-    ["Σύνδεσμος αξιολόγησης", `/review/${b.code}`],
-  ];
+      [
+        "Επισκέπτης",
+        b.name,
+      ],
 
-  const setStatus = async (status: "confirmed" | "cancelled") => {
-    const r = await setFn({
-      data: {
-        id: b.id,
-        status,
-      },
-    });
+      [
+        "Email",
+        b.email ||
+          "—",
+      ],
 
-    if ("error" in r && r.error) {
-      alert("Οι ημερομηνίες δεν είναι πλέον διαθέσιμες.");
-      return;
-    }
+      [
+        "Κινητό",
+        b.phone ||
+          "—",
+      ],
 
-    await s.reload();
-  };
+      ...(b.adults !=
+      null
+        ? [
+            [
+              "Ενήλικες",
+              String(
+                b.adults
+              ),
+            ] as [
+              string,
+              string,
+            ],
+
+            [
+              "Παιδιά",
+              String(
+                children
+              ),
+            ] as [
+              string,
+              string,
+            ],
+
+            [
+              "Ηλικίες παιδιών",
+              agesText,
+            ] as [
+              string,
+              string,
+            ],
+          ]
+        : [
+            [
+              "Άτομα",
+              String(
+                b.guests
+              ),
+            ] as [
+              string,
+              string,
+            ],
+          ]),
+
+      [
+        "Άφιξη",
+
+        fd(
+          b.checkIn
+        ) +
+          " · 15:00",
+      ],
+
+      [
+        "Αναχώρηση",
+
+        fd(
+          b.checkOut
+        ) +
+          " · 11:00",
+      ],
+
+      [
+        "Νύχτες",
+
+        String(
+          diffDays(
+            b.checkIn,
+            b.checkOut
+          )
+        ),
+      ],
+
+      [
+        "Τιμή",
+
+        b.rate ===
+        "flexible"
+          ? "Ευέλικτη"
+          : "Μη επιστρέψιμη",
+      ],
+
+      [
+        "Σύνολο",
+
+        eur(
+          b.total
+        ),
+      ],
+
+      ...(b.source ===
+      "manual"
+        ? [
+            [
+              "Προκαταβολή",
+
+              eur(
+                deposit
+              ),
+            ] as [
+              string,
+              string,
+            ],
+
+            [
+              "Υπόλοιπο",
+
+              eur(
+                balance
+              ),
+            ] as [
+              string,
+              string,
+            ],
+
+            [
+              "Σημειώσεις",
+
+              b.notes
+                ?.trim() ||
+                "—",
+            ] as [
+              string,
+              string,
+            ],
+          ]
+        : []),
+
+      [
+        "Αποδοχή όρων",
+
+        b.termsAcceptedAt
+          ? new Date(
+              b.termsAcceptedAt
+            ).toLocaleString(
+              "el-GR"
+            )
+          : "Όχι ακόμη",
+      ],
+
+      [
+        "Έκδοση όρων",
+
+        b.termsVersion ||
+          "—",
+      ],
+
+      [
+        "Επιστροφή",
+
+        b.refund !=
+        null
+          ? eur(
+              b.refund
+            )
+          : "—",
+      ],
+
+      [
+        "Πηγή",
+
+        b.source ===
+        "manual"
+          ? "Χειροκίνητη"
+          : "Online",
+      ],
+
+      [
+        "Σύνδεσμος αξιολόγησης",
+
+        `/review/${b.code}`,
+      ],
+    ];
+
+  const setStatus =
+    async (
+      status:
+        | "confirmed"
+        | "cancelled"
+    ) => {
+      const r =
+        await setFn({
+          data: {
+            id:
+              b.id,
+
+            status,
+          },
+        });
+
+      if (
+        "error" in
+          r &&
+        r.error
+      ) {
+        alert(
+          "Οι ημερομηνίες δεν είναι πλέον διαθέσιμες."
+        );
+
+        return;
+      }
+
+      await s.reload();
+    };
+
+  const saveAccessCode =
+    async () => {
+      if (
+        savingAccessCode
+      ) {
+        return;
+      }
+
+      const clean =
+        accessCode.replace(
+          /\D/g,
+          ""
+        );
+
+      if (
+        clean &&
+        (
+          clean.length <
+            4 ||
+          clean.length >
+            10
+        )
+      ) {
+        alert(
+          "Ο κωδικός εισόδου πρέπει να αποτελείται από 4 έως 10 ψηφία."
+        );
+
+        return;
+      }
+
+      setSavingAccessCode(
+        true
+      );
+
+      try {
+        const result =
+          await setAccessCodeFn({
+            data: {
+              id:
+                b.id,
+
+              accessCode:
+                clean,
+            },
+          });
+
+        if (
+          "error" in
+            result &&
+          result.error
+        ) {
+          alert(
+            "Δεν ήταν δυνατή η αποθήκευση του κωδικού εισόδου."
+          );
+
+          return;
+        }
+
+        await s.reload();
+
+        alert(
+          clean
+            ? "Ο κωδικός εισόδου αποθηκεύτηκε."
+            : "Ο κωδικός εισόδου αφαιρέθηκε."
+        );
+      } finally {
+        setSavingAccessCode(
+          false
+        );
+      }
+    };
 
   return (
     <div className="space-y-4 max-w-2xl">
       <button
-        onClick={onBack}
+        onClick={
+          onBack
+        }
         className="text-sm flex items-center gap-1"
       >
-        <ChevronLeft size={16} />
+        <ChevronLeft
+          size={
+            16
+          }
+        />
+
         Πίσω
       </button>
 
       <div className="panel p-5 text-sm">
-        {rows.map(([k, v]) => (
-          <div
-            key={k}
-            className="flex justify-between py-2 border-b last:border-0 gap-3"
-          >
-            <span className="text-muted-foreground">{k}</span>
-            <span className="text-right break-words max-w-[65%]">{v}</span>
-          </div>
-        ))}
+        {rows.map(
+          (
+            [
+              k,
+              v,
+            ]
+          ) => (
+            <div
+              key={
+                k
+              }
+              className="flex justify-between py-2 border-b last:border-0 gap-3"
+            >
+              <span className="text-muted-foreground">
+                {
+                  k
+                }
+              </span>
+
+              <span className="text-right break-words max-w-[65%]">
+                {
+                  v
+                }
+              </span>
+            </div>
+          )
+        )}
       </div>
 
-      {b.nightlyPrices && b.nightlyPrices.length > 0 && (
-        <div className="panel p-5">
-          <p className="font-medium mb-3">Τιμές ανά διανυκτέρευση</p>
+      <div className="panel p-5">
+        <p className="font-medium">
+          Κωδικός εισόδου
+        </p>
 
-          <div className="space-y-2 text-sm">
-            {b.nightlyPrices.map((item) => (
-              <div
-                key={item.date}
-                className="flex justify-between border-b last:border-0 pb-2 last:pb-0"
-              >
-                <span className="text-muted-foreground">{fd(item.date)}</span>
-                <strong>{eur(item.price)}</strong>
-              </div>
-            ))}
-          </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Ο επισκέπτης θα δει τον κωδικό μόνο αφού αποδεχτεί τους όρους στο ψηφιακό check-in.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-2 mt-4">
+          <input
+            className="field"
+            inputMode="numeric"
+            autoComplete="off"
+            value={
+              accessCode
+            }
+            onChange={(e) =>
+              setAccessCode(
+                e.target.value.replace(
+                  /\D/g,
+                  ""
+                )
+              )
+            }
+            placeholder="π.χ. 482615"
+            maxLength={
+              10
+            }
+          />
+
+          <button
+            type="button"
+            className="btn-gold whitespace-nowrap"
+            disabled={
+              savingAccessCode
+            }
+            onClick={
+              saveAccessCode
+            }
+          >
+            {savingAccessCode
+              ? "Αποθήκευση..."
+              : "Αποθήκευση"}
+          </button>
         </div>
-      )}
+
+        <div className="mt-4 text-xs space-y-2">
+          <p>
+            <span className="text-muted-foreground">
+              Κωδικός:
+            </span>{" "}
+
+            {b.accessCode
+              ? "Καταχωρημένος"
+              : "Δεν έχει καταχωρηθεί"}
+          </p>
+
+          <p>
+            <span className="text-muted-foreground">
+              Όροι:
+            </span>{" "}
+
+            {b.termsAcceptedAt
+              ? "Έχουν γίνει αποδεκτοί"
+              : "Δεν έχουν γίνει ακόμη αποδεκτοί"}
+          </p>
+
+          {b.checkinToken ? (
+            <p className="break-all">
+              <span className="text-muted-foreground">
+                Digital check-in:
+              </span>{" "}
+
+              https://mmhome.gr/checkin/{b.checkinToken}
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Το μοναδικό link θα δημιουργηθεί μόλις αποθηκεύσεις κωδικό εισόδου.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {b.nightlyPrices &&
+        b.nightlyPrices.length >
+          0 && (
+          <div className="panel p-5">
+            <p className="font-medium mb-3">
+              Τιμές ανά διανυκτέρευση
+            </p>
+
+            <div className="space-y-2 text-sm">
+              {b.nightlyPrices.map(
+                (
+                  item
+                ) => (
+                  <div
+                    key={
+                      item.date
+                    }
+                    className="flex justify-between border-b last:border-0 pb-2 last:pb-0"
+                  >
+                    <span className="text-muted-foreground">
+                      {
+                        fd(
+                          item.date
+                        )
+                      }
+                    </span>
+
+                    <strong>
+                      {
+                        eur(
+                          item.price
+                        )
+                      }
+                    </strong>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        )}
 
       <div className="flex gap-3 flex-wrap">
-        {b.source === "manual" && (
+        {b.source ===
+          "manual" && (
           <button
             className="btn-gold"
-            onClick={() => setEditing(true)}
+            onClick={() =>
+              setEditing(
+                true
+              )
+            }
           >
             Επεξεργασία κράτησης
           </button>
         )}
 
-        {b.status === "confirmed" ? (
+        {b.status ===
+        "confirmed" ? (
           <button
             className="btn-line"
-            onClick={() => setStatus("cancelled")}
+            onClick={() =>
+              setStatus(
+                "cancelled"
+              )
+            }
           >
             Ακύρωση κράτησης
           </button>
         ) : (
           <button
             className="btn-line"
-            onClick={() => setStatus("confirmed")}
+            onClick={() =>
+              setStatus(
+                "confirmed"
+              )
+            }
           >
             Επαναφορά κράτησης
           </button>
@@ -1452,26 +2527,37 @@ function BookingDetail({
 }
 
 function Pricing() {
-  const s = useAdmin();
+  const s =
+    useAdmin();
 
   const today =
     todayISO();
 
-  const [f, setF] =
+  const [
+    f,
+    setF,
+  ] =
     useState({
       start:
         addDays(
           today,
           30
         ),
+
       end:
         addDays(
           today,
           33
         ),
-      price: "",
-      min: "",
-      label: "",
+
+      price:
+        "",
+
+      min:
+        "",
+
+      label:
+        "",
     });
 
   const addFn =
@@ -1489,8 +2575,10 @@ function Pricing() {
       if (
         f.end <
           f.start ||
-        (!f.price &&
-          !f.min)
+        (
+          !f.price &&
+          !f.min
+        )
       ) {
         return;
       }
@@ -1499,20 +2587,24 @@ function Pricing() {
         data: {
           start:
             f.start,
+
           end:
             f.end,
+
           ...(f.price
             ? {
                 price:
                   +f.price,
               }
             : {}),
+
           ...(f.min
             ? {
                 minNights:
                   +f.min,
               }
             : {}),
+
           label:
             f.label,
         },
@@ -1522,19 +2614,22 @@ function Pricing() {
 
       setF({
         ...f,
-        price: "",
-        min: "",
-        label: "",
+
+        price:
+          "",
+
+        min:
+          "",
+
+        label:
+          "",
       });
     };
 
   return (
     <div className="space-y-4">
       <div className="panel p-5 text-sm">
-        Βασική τιμή: Ευέλικτη €200 ·
-        Μη επιστρέψιμη €180 ·
-        Ελάχιστη διαμονή 2 νύχτες ·
-        Καθαρισμός περιλαμβάνεται.
+        Βασική τιμή: Ευέλικτη €200 · Μη επιστρέψιμη €180 · Ελάχιστη διαμονή 2 νύχτες · Καθαρισμός περιλαμβάνεται.
       </div>
 
       <div className="panel p-5 grid sm:grid-cols-2 gap-3">
@@ -1550,6 +2645,7 @@ function Pricing() {
             onChange={(e) =>
               setF({
                 ...f,
+
                 start:
                   e.target.value,
               })
@@ -1569,6 +2665,7 @@ function Pricing() {
             onChange={(e) =>
               setF({
                 ...f,
+
                 end:
                   e.target.value,
               })
@@ -1580,10 +2677,13 @@ function Pricing() {
           className="field"
           type="number"
           placeholder="Ευέλικτη τιμή € / νύχτα"
-          value={f.price}
+          value={
+            f.price
+          }
           onChange={(e) =>
             setF({
               ...f,
+
               price:
                 e.target.value,
             })
@@ -1594,10 +2694,13 @@ function Pricing() {
           className="field"
           type="number"
           placeholder="Ελάχιστες νύχτες"
-          value={f.min}
+          value={
+            f.min
+          }
           onChange={(e) =>
             setF({
               ...f,
+
               min:
                 e.target.value,
             })
@@ -1607,10 +2710,13 @@ function Pricing() {
         <input
           className="field"
           placeholder="Εσωτερική σημείωση"
-          value={f.label}
+          value={
+            f.label
+          }
           onChange={(e) =>
             setF({
               ...f,
+
               label:
                 e.target.value,
             })
@@ -1628,7 +2734,9 @@ function Pricing() {
 
           <button
             className="btn-gold"
-            onClick={add}
+            onClick={
+              add
+            }
           >
             Εφαρμογή
           </button>
@@ -1636,25 +2744,36 @@ function Pricing() {
       </div>
 
       {s.overrides.map(
-        (o) => (
+        (
+          o
+        ) => (
           <div
-            key={o.id}
+            key={
+              o.id
+            }
             className="panel p-4 flex justify-between items-center gap-3 text-sm"
           >
             <div>
               <p>
-                {fd(
-                  o.start
-                )}{" "}
+                {
+                  fd(
+                    o.start
+                  )
+                }{" "}
                 →{" "}
-                {fd(
-                  o.end
-                )}
+                {
+                  fd(
+                    o.end
+                  )
+                }
 
                 {o.label && (
                   <span className="text-muted-foreground">
                     {" "}
-                    · {o.label}
+                    ·{" "}
+                    {
+                      o.label
+                    }
                   </span>
                 )}
               </p>
@@ -1678,7 +2797,8 @@ function Pricing() {
                 async () => {
                   await rmFn({
                     data: {
-                      id: o.id,
+                      id:
+                        o.id,
                     },
                   });
 
@@ -1693,13 +2813,13 @@ function Pricing() {
       )}
 
       <p className="text-xs text-muted-foreground">
-        Έλεγχος τιμής σε 30 ημέρες:
-        Ευέλικτη €
+        Έλεγχος τιμής σε 30 ημέρες: Ευέλικτη €
         {flexRateFor(
           addDays(
             today,
             30
           ),
+
           s.overrides
         )}{" "}
         · ελάχιστο{" "}
@@ -1708,6 +2828,7 @@ function Pricing() {
             today,
             30
           ),
+
           s.overrides
         )}{" "}
         νύχτες.
@@ -1717,24 +2838,31 @@ function Pricing() {
 }
 
 function Blocks() {
-  const s = useAdmin();
+  const s =
+    useAdmin();
 
   const today =
     todayISO();
 
-  const [f, setF] =
+  const [
+    f,
+    setF,
+  ] =
     useState({
       start:
         addDays(
           today,
           14
         ),
+
       end:
         addDays(
           today,
           16
         ),
-      reason: "",
+
+      reason:
+        "",
     });
 
   const addFn =
@@ -1761,8 +2889,10 @@ function Blocks() {
           data: {
             start:
               f.start,
+
             end:
               f.end,
+
             reason:
               f.reason,
           },
@@ -1779,6 +2909,7 @@ function Blocks() {
             ? "Οι ημερομηνίες δεν είναι διαθέσιμες."
             : "Δεν ήταν δυνατό το μπλοκάρισμα."
         );
+
         return;
       }
 
@@ -1786,7 +2917,9 @@ function Blocks() {
 
       setF({
         ...f,
-        reason: "",
+
+        reason:
+          "",
       });
     };
 
@@ -1805,6 +2938,7 @@ function Blocks() {
             onChange={(e) =>
               setF({
                 ...f,
+
                 start:
                   e.target.value,
               })
@@ -1824,6 +2958,7 @@ function Blocks() {
             onChange={(e) =>
               setF({
                 ...f,
+
                 end:
                   e.target.value,
               })
@@ -1834,10 +2969,13 @@ function Blocks() {
         <input
           className="field sm:col-span-2"
           placeholder="Εσωτερικός λόγος — δεν εμφανίζεται στους επισκέπτες"
-          value={f.reason}
+          value={
+            f.reason
+          }
           onChange={(e) =>
             setF({
               ...f,
+
               reason:
                 e.target.value,
             })
@@ -1846,31 +2984,43 @@ function Blocks() {
 
         <button
           className="btn-gold sm:col-span-2"
-          onClick={add}
+          onClick={
+            add
+          }
         >
           Μπλοκάρισμα ημερομηνιών
         </button>
       </div>
 
       {s.blocks.map(
-        (b) => (
+        (
+          b
+        ) => (
           <div
-            key={b.id}
+            key={
+              b.id
+            }
             className="panel p-4 flex justify-between items-center text-sm gap-3"
           >
             <div>
               <p>
-                {fd(
-                  b.start
-                )}{" "}
+                {
+                  fd(
+                    b.start
+                  )
+                }{" "}
                 →{" "}
-                {fd(
-                  b.end
-                )}
+                {
+                  fd(
+                    b.end
+                  )
+                }
               </p>
 
               <p className="text-xs text-muted-foreground">
-                {b.reason}
+                {
+                  b.reason
+                }
               </p>
             </div>
 
@@ -1880,7 +3030,8 @@ function Blocks() {
                 async () => {
                   await rmFn({
                     data: {
-                      id: b.id,
+                      id:
+                        b.id,
                     },
                   });
 
@@ -1898,37 +3049,54 @@ function Blocks() {
 }
 
 function ReviewsMod() {
-  const s = useStore();
+  const s =
+    useStore();
 
-  const set = (
-    id: string,
-    status:
-      | "approved"
-      | "rejected"
-      | "pending"
-  ) =>
-    update((st) => ({
-      ...st,
-      reviews:
-        st.reviews.map(
-          (r) =>
-            r.id === id
-              ? {
-                  ...r,
-                  status,
-                }
-              : r
-        ),
-    }));
+  const set =
+    (
+      id:
+        string,
 
-  const statusLabel = (
-    st: string
-  ) =>
-    st === "pending"
-      ? "Σε αναμονή"
-      : st === "approved"
-      ? "Εγκεκριμένες"
-      : "Απορριφθείσες";
+      status:
+        | "approved"
+        | "rejected"
+        | "pending"
+    ) =>
+      update(
+        (
+          st
+        ) => ({
+          ...st,
+
+          reviews:
+            st.reviews.map(
+              (
+                r
+              ) =>
+                r.id ===
+                id
+                  ? {
+                      ...r,
+
+                      status,
+                    }
+                  : r
+            ),
+        })
+      );
+
+  const statusLabel =
+    (
+      st:
+        string
+    ) =>
+      st ===
+      "pending"
+        ? "Σε αναμονή"
+        : st ===
+          "approved"
+        ? "Εγκεκριμένες"
+        : "Απορριφθείσες";
 
   return (
     <div className="space-y-3">
@@ -1936,97 +3104,131 @@ function ReviewsMod() {
         "pending",
         "approved",
         "rejected",
-      ].map((st) => (
-        <div key={st}>
-          <p className="eyebrow my-3">
-            {statusLabel(st)}
-          </p>
+      ].map(
+        (
+          st
+        ) => (
+          <div
+            key={
+              st
+            }
+          >
+            <p className="eyebrow my-3">
+              {
+                statusLabel(
+                  st
+                )
+              }
+            </p>
 
-          {s.reviews
-            .filter(
-              (r) =>
-                r.status ===
-                st
-            )
-            .map((r) => (
-              <div
-                key={r.id}
-                className="panel p-4 mb-2 text-sm"
-              >
-                <div className="flex justify-between">
-                  <span>
-                    {r.name} ·{" "}
-                    {"★".repeat(
-                      r.rating
-                    )}
-                  </span>
+            {s.reviews
+              .filter(
+                (
+                  r
+                ) =>
+                  r.status ===
+                  st
+              )
+              .map(
+                (
+                  r
+                ) => (
+                  <div
+                    key={
+                      r.id
+                    }
+                    className="panel p-4 mb-2 text-sm"
+                  >
+                    <div className="flex justify-between">
+                      <span>
+                        {
+                          r.name
+                        }{" "}
+                        ·{" "}
+                        {"★".repeat(
+                          r.rating
+                        )}
+                      </span>
 
-                  {r.sample && (
-                    <span className="text-xs text-primary">
-                      ΔΕΙΓΜΑ
-                    </span>
-                  )}
-                </div>
+                      {r.sample && (
+                        <span className="text-xs text-primary">
+                          ΔΕΙΓΜΑ
+                        </span>
+                      )}
+                    </div>
 
-                <p className="mt-2 text-muted-foreground">
-                  {r.text}
-                </p>
-
-                <div className="flex gap-3 mt-3 text-xs">
-                  {st !==
-                    "approved" && (
-                    <button
-                      className="text-olive"
-                      onClick={() =>
-                        set(
-                          r.id,
-                          "approved"
-                        )
+                    <p className="mt-2 text-muted-foreground">
+                      {
+                        r.text
                       }
-                    >
-                      Έγκριση
-                    </button>
-                  )}
+                    </p>
 
-                  {st !==
-                    "rejected" && (
-                    <button
-                      className="text-destructive"
-                      onClick={() =>
-                        set(
-                          r.id,
-                          "rejected"
-                        )
-                      }
-                    >
-                      Απόρριψη
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-        </div>
-      ))}
+                    <div className="flex gap-3 mt-3 text-xs">
+                      {st !==
+                        "approved" && (
+                        <button
+                          className="text-olive"
+                          onClick={() =>
+                            set(
+                              r.id,
+                              "approved"
+                            )
+                          }
+                        >
+                          Έγκριση
+                        </button>
+                      )}
+
+                      {st !==
+                        "rejected" && (
+                        <button
+                          className="text-destructive"
+                          onClick={() =>
+                            set(
+                              r.id,
+                              "rejected"
+                            )
+                          }
+                        >
+                          Απόρριψη
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
+          </div>
+        )
+      )}
     </div>
   );
 }
 
 function Notifications() {
-  const { settings } =
+  const {
+    settings,
+  } =
     useStore();
 
-  const set = (
-    p: Partial<
-      typeof settings
-    >
-  ) =>
-    update((st) => ({
-      ...st,
-      settings: {
-        ...st.settings,
-        ...p,
-      },
-    }));
+  const set =
+    (
+      p:
+        Partial<
+          typeof settings
+        >
+    ) =>
+      update(
+        (
+          st
+        ) => ({
+          ...st,
+
+          settings: {
+            ...st.settings,
+            ...p,
+          },
+        })
+      );
 
   return (
     <div className="panel p-5 space-y-4 max-w-xl text-sm">
@@ -2138,18 +3340,29 @@ function Emails() {
 
   const b =
     s.bookings.find(
-      (x) =>
+      (
+        x
+      ) =>
         x.status ===
           "confirmed" &&
         x.checkIn >=
           todayISO()
     ) ??
-    s.bookings[0];
+    s.bookings[
+      0
+    ];
 
-  const [which, setWhich] =
-    useState(0);
+  const [
+    which,
+    setWhich,
+  ] =
+    useState(
+      0
+    );
 
-  if (!b) {
+  if (
+    !b
+  ) {
     return (
       <div className="panel p-5">
         Δεν υπάρχουν ακόμη κρατήσεις για προεπισκόπηση email.
@@ -2159,15 +3372,21 @@ function Emails() {
 
   const list = [
     {
-      t: "Επιβεβαίωση προς επισκέπτη",
-      subj: `Η κράτησή σας στο MM Home ${b.code} επιβεβαιώθηκε`,
+      t:
+        "Επιβεβαίωση προς επισκέπτη",
+
+      subj:
+        `Η κράτησή σας στο MM Home ${b.code} επιβεβαιώθηκε`,
+
       body: [
         `Αγαπητέ/ή ${b.name},`,
+
         `Σας ευχαριστούμε που επιλέξατε το MM Home. Η διαμονή σας από ${fd(
           b.checkIn
         )} έως ${fd(
           b.checkOut
         )} για ${b.guests} επισκέπτες έχει επιβεβαιωθεί.`,
+
         `Τιμή: ${
           b.rate ===
           "flexible"
@@ -2176,21 +3395,29 @@ function Emails() {
         } · Σύνολο: ${eur(
           b.total
         )}.`,
+
         "Προσωπικό check-in από τις 15:00. Αναχώρηση έως τις 11:00.",
+
         `Κωδικός κράτησης: ${b.code}.`,
       ],
     },
 
     {
-      t: "Νέα κράτηση προς ιδιοκτήτη",
-      subj: `Νέα κράτηση MM Home ${b.code}`,
+      t:
+        "Νέα κράτηση προς ιδιοκτήτη",
+
+      subj:
+        `Νέα κράτηση MM Home ${b.code}`,
+
       body: [
         `${b.name} · ${b.email} · ${b.phone}`,
+
         `${fd(
           b.checkIn
         )} → ${fd(
           b.checkOut
         )} · ${b.guests} επισκέπτες`,
+
         `Σύνολο ${eur(
           b.total
         )}`,
@@ -2198,34 +3425,48 @@ function Emails() {
     },
 
     {
-      t: "Πριν την άφιξη",
+      t:
+        "Πριν την άφιξη",
+
       subj:
         "Η διαμονή σας στο MM Home πλησιάζει",
+
       body: [
         `Αγαπητέ/ή ${b.name},`,
+
         `Σας περιμένουμε στις ${fd(
           b.checkIn
         )}. Το προσωπικό check-in είναι διαθέσιμο από τις 15:00.`,
+
         `Για οτιδήποτε χρειαστείτε, επικοινωνήστε μαζί μας στο ${s.settings.phone} ή στο info@mmhome.gr.`,
       ],
     },
 
     {
-      t: "Μετά την αναχώρηση",
+      t:
+        "Μετά την αναχώρηση",
+
       subj:
         "Ευχαριστούμε που επιλέξατε το MM Home",
+
       body: [
         `Αγαπητέ/ή ${b.name},`,
+
         "Ευχαριστούμε που επιλέξατε το MM Home!",
+
         `Θα χαρούμε να μοιραστείτε την εμπειρία σας: https://mmhome.gr/review/${b.code}`,
       ],
     },
   ];
 
   const e =
-    list[which];
+    list[
+      which
+    ];
 
-  if (!e) {
+  if (
+    !e
+  ) {
     return null;
   }
 
@@ -2233,19 +3474,29 @@ function Emails() {
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
         {list.map(
-          (x, i) => (
+          (
+            x,
+            i
+          ) => (
             <button
-              key={x.t}
+              key={
+                x.t
+              }
               onClick={() =>
-                setWhich(i)
+                setWhich(
+                  i
+                )
               }
               className={`px-3 py-1.5 rounded-full text-xs border ${
-                i === which
+                i ===
+                which
                   ? "bg-foreground text-background"
                   : ""
               }`}
             >
-              {x.t}
+              {
+                x.t
+              }
             </button>
           )
         )}
@@ -2260,19 +3511,32 @@ function Emails() {
           </p>
 
           <p className="font-serif italic text-sm text-muted-foreground">
-            {SLOGAN}
+            {
+              SLOGAN
+            }
           </p>
         </div>
 
         <div className="p-6 text-sm space-y-3">
           <p className="text-xs text-muted-foreground">
-            Θέμα: {e.subj}
+            Θέμα:{" "}
+            {
+              e.subj
+            }
           </p>
 
           {e.body.map(
-            (p) => (
-              <p key={p}>
-                {p}
+            (
+              p
+            ) => (
+              <p
+                key={
+                  p
+                }
+              >
+                {
+                  p
+                }
               </p>
             )
           )}
