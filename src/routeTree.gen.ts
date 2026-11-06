@@ -22,70 +22,89 @@ import { Route as ReviewsRouteImport } from './routes/reviews'
 import { Route as StayRouteImport } from './routes/stay'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ReviewCodeRouteImport } from './routes/review.$code'
+import { Route as CheckinTokenRouteImport } from './routes/checkin.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const AmenitiesRoute = AmenitiesRouteImport.update({
   id: '/amenities',
   path: '/amenities',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const BookRoute = BookRouteImport.update({
   id: '/book',
   path: '/book',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const BookSuccessRoute = BookSuccessRouteImport.update({
   id: '/book-success',
   path: '/book-success',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const CookiesRoute = CookiesRouteImport.update({
   id: '/cookies',
   path: '/cookies',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const LocationRoute = LocationRouteImport.update({
   id: '/location',
   path: '/location',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const MyBookingRoute = MyBookingRouteImport.update({
   id: '/my-booking',
   path: '/my-booking',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const ReviewsRoute = ReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const StayRoute = StayRouteImport.update({
   id: '/stay',
   path: '/stay',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const ReviewCodeRoute = ReviewCodeRouteImport.update({
   id: '/review/$code',
   path: '/review/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const CheckinTokenRoute = CheckinTokenRouteImport.update({
+  id: '/checkin/$token',
+  path: '/checkin/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -103,7 +122,9 @@ export interface FileRoutesByFullPath {
   '/stay': typeof StayRoute
   '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
+  '/checkin/$token': typeof CheckinTokenRoute
 }
+
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
@@ -118,7 +139,9 @@ export interface FileRoutesByTo {
   '/stay': typeof StayRoute
   '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
+  '/checkin/$token': typeof CheckinTokenRoute
 }
+
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
@@ -134,9 +157,12 @@ export interface FileRoutesById {
   '/stay': typeof StayRoute
   '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
+  '/checkin/$token': typeof CheckinTokenRoute
 }
+
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
+
   fullPaths:
     | '/'
     | '/admin'
@@ -151,7 +177,10 @@ export interface FileRouteTypes {
     | '/stay'
     | '/terms'
     | '/review/$code'
+    | '/checkin/$token'
+
   fileRoutesByTo: FileRoutesByTo
+
   to:
     | '/'
     | '/admin'
@@ -166,6 +195,8 @@ export interface FileRouteTypes {
     | '/stay'
     | '/terms'
     | '/review/$code'
+    | '/checkin/$token'
+
   id:
     | '__root__'
     | '/'
@@ -181,8 +212,11 @@ export interface FileRouteTypes {
     | '/stay'
     | '/terms'
     | '/review/$code'
+    | '/checkin/$token'
+
   fileRoutesById: FileRoutesById
 }
+
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
@@ -197,6 +231,7 @@ export interface RootRouteChildren {
   StayRoute: typeof StayRoute
   TermsRoute: typeof TermsRoute
   ReviewCodeRoute: typeof ReviewCodeRoute
+  CheckinTokenRoute: typeof CheckinTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -208,6 +243,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -215,6 +251,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/amenities': {
       id: '/amenities'
       path: '/amenities'
@@ -222,6 +259,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AmenitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/book': {
       id: '/book'
       path: '/book'
@@ -229,6 +267,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/book-success': {
       id: '/book-success'
       path: '/book-success'
@@ -236,6 +275,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookSuccessRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/cookies': {
       id: '/cookies'
       path: '/cookies'
@@ -243,6 +283,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CookiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/location': {
       id: '/location'
       path: '/location'
@@ -250,6 +291,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocationRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/my-booking': {
       id: '/my-booking'
       path: '/my-booking'
@@ -257,6 +299,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyBookingRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -264,6 +307,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/reviews': {
       id: '/reviews'
       path: '/reviews'
@@ -271,6 +315,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReviewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/stay': {
       id: '/stay'
       path: '/stay'
@@ -278,6 +323,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StayRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -285,11 +331,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+
     '/review/$code': {
       id: '/review/$code'
       path: '/review/$code'
       fullPath: '/review/$code'
       preLoaderRoute: typeof ReviewCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+
+    '/checkin/$token': {
+      id: '/checkin/$token'
+      path: '/checkin/$token'
+      fullPath: '/checkin/$token'
+      preLoaderRoute: typeof CheckinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -309,17 +364,36 @@ const rootRouteChildren: RootRouteChildren = {
   StayRoute: StayRoute,
   TermsRoute: TermsRoute,
   ReviewCodeRoute: ReviewCodeRoute,
+  CheckinTokenRoute: CheckinTokenRoute,
 }
-export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
+export const routeTree =
+  rootRouteImport
+    ._addFileChildren(
+      rootRouteChildren
+    )
+    ._addFileTypes<FileRouteTypes>()
+
+import type {
+  getRouter,
+} from './router.tsx'
+
+import type {
+  startInstance,
+} from './start.ts'
+
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+    router: Awaited<
+      ReturnType<
+        typeof getRouter
+      >
+    >
+    config: Awaited<
+      ReturnType<
+        typeof startInstance.getOptions
+      >
+    >
   }
 }
