@@ -36,6 +36,11 @@ export interface Booking {
   depositAmount?: number;
   notes?: string;
 
+  accessCode?: string;
+  checkinToken?: string;
+  termsAcceptedAt?: string;
+  termsVersion?: string;
+
   status:
     | "confirmed"
     | "cancelled";
@@ -375,15 +380,6 @@ export function validateStay(
     return "min";
   }
 
-  /*
-   * Only the actual nights are
-   * checked.
-   *
-   * The checkout date itself is
-   * intentionally NOT checked,
-   * because another guest may
-   * arrive that same afternoon.
-   */
   const datesToCheck =
     nightsOf(
       ci,
