@@ -1,27 +1,60 @@
-import { env } from "cloudflare:workers";
-import { getDB } from "./d1.server";
+import {
+  env,
+} from "cloudflare:workers";
+
+import {
+  getDB,
+} from "./d1.server";
 
 import logoAsset from "@/assets/mmhome-logo.png";
 
 type EmailEnv = {
-  RESEND_API_KEY?: string;
+  RESEND_API_KEY?:
+    string;
 };
 
 type BookingRow = {
-  id: string;
-  code: string;
-  check_in: string;
-  check_out: string;
-  guests: number;
-  name: string;
-  email: string;
+  id:
+    string;
+
+  code:
+    string;
+
+  check_in:
+    string;
+
+  check_out:
+    string;
+
+  guests:
+    number;
+
+  name:
+    string;
+
+  email:
+    string;
+
+  access_code:
+    | string
+    | null;
+
+  checkin_token:
+    | string
+    | null;
 };
 
 const SITE_URL =
   "https://mmhome.gr";
 
 const LOGO_URL =
-  `${SITE_URL}${logoAsset.startsWith("/") ? "" : "/"}${logoAsset}`;
+  `${SITE_URL}${
+    logoAsset.startsWith(
+      "/"
+    )
+      ? ""
+      : "/"
+  }${logoAsset}`;
 
 const HERO_URL =
   "https://mmhome.gr/prearrival-hero.png";
@@ -36,9 +69,15 @@ function todayAthens() {
       {
         timeZone:
           "Europe/Athens",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
+
+        year:
+          "numeric",
+
+        month:
+          "2-digit",
+
+        day:
+          "2-digit",
       }
     ).formatToParts(
       new Date()
@@ -46,20 +85,29 @@ function todayAthens() {
 
   const year =
     parts.find(
-      (p) =>
-        p.type === "year"
+      (
+        p
+      ) =>
+        p.type ===
+        "year"
     )?.value;
 
   const month =
     parts.find(
-      (p) =>
-        p.type === "month"
+      (
+        p
+      ) =>
+        p.type ===
+        "month"
     )?.value;
 
   const day =
     parts.find(
-      (p) =>
-        p.type === "day"
+      (
+        p
+      ) =>
+        p.type ===
+        "day"
     )?.value;
 
   return `${year}-${month}-${day}`;
@@ -72,8 +120,10 @@ function currentAthensHour() {
       {
         timeZone:
           "Europe/Athens",
+
         hour:
           "2-digit",
+
         hour12:
           false,
       }
@@ -84,8 +134,11 @@ function currentAthensHour() {
 }
 
 function addDays(
-  date: string,
-  days: number
+  date:
+    string,
+
+  days:
+    number
 ) {
   const d =
     new Date(
@@ -99,11 +152,16 @@ function addDays(
 
   return d
     .toISOString()
-    .slice(0, 10);
+    .slice(
+      0,
+      10
+    );
 }
 
 function formatDate(
-  iso: string,
+  iso:
+    string,
+
   locale:
     | "el-GR"
     | "en-GB"
@@ -113,15 +171,21 @@ function formatDate(
   ).toLocaleDateString(
     locale,
     {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
+      day:
+        "numeric",
+
+      month:
+        "long",
+
+      year:
+        "numeric",
     }
   );
 }
 
 function escapeHtml(
-  value: string
+  value:
+    string
 ) {
   return value
     .replaceAll(
@@ -168,7 +232,8 @@ function resendKey() {
 }
 
 async function claim(
-  bookingId: string
+  bookingId:
+    string
 ) {
   const db =
     getDB();
@@ -197,7 +262,8 @@ async function claim(
 }
 
 async function release(
-  bookingId: string
+  bookingId:
+    string
 ) {
   const db =
     getDB();
@@ -207,8 +273,7 @@ async function release(
       DELETE FROM booking_notifications
       WHERE
         booking_id = ?
-        AND kind =
-          'guest_prearrival_2d'
+        AND kind = 'guest_prearrival_2d'
     `)
     .bind(
       bookingId
@@ -217,7 +282,8 @@ async function release(
 }
 
 function buildEmailHtml(
-  booking: BookingRow
+  booking:
+    BookingRow
 ) {
   const name =
     escapeHtml(
@@ -228,6 +294,15 @@ function buildEmailHtml(
     escapeHtml(
       booking.code
     );
+
+  const token =
+    booking.checkin_token ??
+    "";
+
+  const checkinUrl =
+    `${SITE_URL}/checkin/${encodeURIComponent(
+      token
+    )}`;
 
   const checkInEl =
     formatDate(
@@ -258,10 +333,12 @@ function buildEmailHtml(
 <html>
 <head>
   <meta charset="utf-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
+
   <title>
     MM Home
   </title>
@@ -307,7 +384,6 @@ function buildEmailHtml(
           "
         >
 
-          <!-- HERO PHOTO WITH LOGO -->
           <tr>
             <td style="padding:0;">
               <img
@@ -327,7 +403,11 @@ function buildEmailHtml(
 
           <!-- GREEK -->
           <tr>
-            <td style="padding:30px 28px 10px;">
+            <td
+              style="
+                padding:30px 28px 10px;
+              "
+            >
 
               <div
                 style="
@@ -379,7 +459,11 @@ function buildEmailHtml(
                 "
               >
                 <tr>
-                  <td style="padding:18px 20px;">
+                  <td
+                    style="
+                      padding:18px 20px;
+                    "
+                  >
                     <table
                       role="presentation"
                       width="100%"
@@ -428,8 +512,12 @@ function buildEmailHtml(
                             font-size:15px;
                           "
                         >
-                          <strong>${checkInEl}</strong>
+                          <strong>
+                            ${checkInEl}
+                          </strong>
+
                           <br>
+
                           <span
                             style="
                               color:#766858;
@@ -459,8 +547,12 @@ function buildEmailHtml(
                             font-size:15px;
                           "
                         >
-                          <strong>${checkOutEl}</strong>
+                          <strong>
+                            ${checkOutEl}
+                          </strong>
+
                           <br>
+
                           <span
                             style="
                               color:#766858;
@@ -499,6 +591,100 @@ function buildEmailHtml(
                 </tr>
               </table>
 
+              <!-- DIGITAL CHECK-IN -->
+              <table
+                role="presentation"
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
+                style="
+                  width:100%;
+                  background:#f4f7f5;
+                  border:1px solid #dbe6e1;
+                  border-radius:12px;
+                  margin:0 0 26px;
+                "
+              >
+                <tr>
+                  <td
+                    align="center"
+                    style="
+                      padding:24px 20px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-family:Georgia,'Times New Roman',serif;
+                        font-size:21px;
+                        font-weight:bold;
+                        color:#365f51;
+                        margin-bottom:10px;
+                      "
+                    >
+                      Ψηφιακό check-in
+                    </div>
+
+                    <div
+                      style="
+                        font-size:14px;
+                        line-height:1.7;
+                        color:#625b54;
+                        margin-bottom:18px;
+                      "
+                    >
+                      Αποδεχτείτε τους όρους διαμονής
+                      για να ολοκληρώσετε το check-in
+                      και να εμφανιστεί ο προσωπικός
+                      κωδικός εισόδου σας.
+                    </div>
+
+                    <table
+                      role="presentation"
+                      cellpadding="0"
+                      cellspacing="0"
+                      border="0"
+                    >
+                      <tr>
+                        <td
+                          bgcolor="#365f51"
+                          style="
+                            border-radius:8px;
+                          "
+                        >
+                          <a
+                            href="${checkinUrl}"
+                            target="_blank"
+                            style="
+                              display:inline-block;
+                              padding:15px 28px;
+                              color:#ffffff;
+                              text-decoration:none;
+                              font-size:15px;
+                              font-weight:bold;
+                            "
+                          >
+                            Ολοκλήρωση ψηφιακού check-in
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <div
+                      style="
+                        margin-top:14px;
+                        color:#887d70;
+                        font-size:11px;
+                        line-height:1.5;
+                      "
+                    >
+                      Ο σύνδεσμος είναι προσωπικός
+                      και αφορά αποκλειστικά τη συγκεκριμένη κράτηση.
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
               <table
                 role="presentation"
                 width="100%"
@@ -527,8 +713,12 @@ function buildEmailHtml(
                       line-height:1.6;
                     "
                   >
-                    <strong>MM Home</strong>
+                    <strong>
+                      MM Home
+                    </strong>
+
                     <br>
+
                     Ασκληπιού 44, Τρίκαλα
                   </td>
                 </tr>
@@ -540,7 +730,9 @@ function buildEmailHtml(
                 cellpadding="0"
                 cellspacing="0"
                 border="0"
-                style="margin:0 0 28px;"
+                style="
+                  margin:0 0 28px;
+                "
               >
                 <tr>
                   <td align="center">
@@ -553,7 +745,9 @@ function buildEmailHtml(
                       <tr>
                         <td
                           bgcolor="#8a642f"
-                          style="border-radius:8px;"
+                          style="
+                            border-radius:8px;
+                          "
                         >
                           <a
                             href="${DIRECTIONS_URL}"
@@ -633,12 +827,11 @@ function buildEmailHtml(
                       line-height:1.6;
                     "
                   >
-                    Καθώς το check-in πραγματοποιείται
-                    προσωπικά, θα μας βοηθούσε να μας
-                    ενημερώσετε για την
-                    <strong>περίπου ώρα άφιξής σας</strong>,
-                    ώστε να είμαστε έτοιμοι να σας
-                    υποδεχτούμε.
+                    Αν γνωρίζετε περίπου την ώρα
+                    άφιξής σας, μπορείτε να μας
+                    ενημερώσετε ώστε να είμαστε
+                    διαθέσιμοι αν χρειαστείτε
+                    οποιαδήποτε βοήθεια.
                   </td>
                 </tr>
 
@@ -651,7 +844,7 @@ function buildEmailHtml(
                       border-top:1px solid #eee7dd;
                     "
                   >
-                    🪪
+                    🔑
                   </td>
 
                   <td
@@ -662,9 +855,9 @@ function buildEmailHtml(
                       line-height:1.6;
                     "
                   >
-                    Κατά την άφιξη θα χρειαστεί η
-                    επίδειξη ταυτότητας ή διαβατηρίου
-                    του κύριου επισκέπτη.
+                    Ο προσωπικός κωδικός εισόδου
+                    εμφανίζεται μόνο μετά την
+                    ολοκλήρωση του ψηφιακού check-in.
                   </td>
                 </tr>
               </table>
@@ -690,8 +883,12 @@ function buildEmailHtml(
                       line-height:1.7;
                     "
                   >
-                    <strong>Τηλέφωνο / Viber</strong>
+                    <strong>
+                      Τηλέφωνο / Viber
+                    </strong>
+
                     <br>
+
                     +30 698 468 4411
                   </td>
 
@@ -702,11 +899,17 @@ function buildEmailHtml(
                       line-height:1.7;
                     "
                   >
-                    <strong>Email</strong>
+                    <strong>
+                      Email
+                    </strong>
+
                     <br>
+
                     <a
                       href="mailto:info@mmhome.gr"
-                      style="color:#8a642f;"
+                      style="
+                        color:#8a642f;
+                      "
                     >
                       info@mmhome.gr
                     </a>
@@ -730,7 +933,11 @@ function buildEmailHtml(
           </tr>
 
           <tr>
-            <td style="padding:10px 28px;">
+            <td
+              style="
+                padding:10px 28px;
+              "
+            >
               <div
                 style="
                   border-top:1px solid #ded4c7;
@@ -741,7 +948,11 @@ function buildEmailHtml(
 
           <!-- ENGLISH -->
           <tr>
-            <td style="padding:20px 28px 34px;">
+            <td
+              style="
+                padding:20px 28px 34px;
+              "
+            >
 
               <div
                 style="
@@ -797,18 +1008,123 @@ function buildEmailHtml(
                       line-height:1.8;
                     "
                   >
-                    <strong>Booking code:</strong>
+                    <strong>
+                      Booking code:
+                    </strong>
+
                     ${code}
+
                     <br>
 
-                    <strong>Check-in:</strong>
+                    <strong>
+                      Check-in:
+                    </strong>
+
                     ${checkInEn}
                     — from 15:00
+
                     <br>
 
-                    <strong>Check-out:</strong>
+                    <strong>
+                      Check-out:
+                    </strong>
+
                     ${checkOutEn}
                     — by 11:00
+                  </td>
+                </tr>
+              </table>
+
+              <!-- DIGITAL CHECK-IN EN -->
+              <table
+                role="presentation"
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
+                style="
+                  width:100%;
+                  background:#f4f7f5;
+                  border:1px solid #dbe6e1;
+                  border-radius:12px;
+                  margin:24px 0;
+                "
+              >
+                <tr>
+                  <td
+                    align="center"
+                    style="
+                      padding:24px 20px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-family:Georgia,'Times New Roman',serif;
+                        font-size:21px;
+                        font-weight:bold;
+                        color:#365f51;
+                        margin-bottom:10px;
+                      "
+                    >
+                      Digital check-in
+                    </div>
+
+                    <div
+                      style="
+                        font-size:14px;
+                        line-height:1.7;
+                        color:#625b54;
+                        margin-bottom:18px;
+                      "
+                    >
+                      Accept the stay terms to
+                      complete digital check-in
+                      and reveal your personal
+                      door access code.
+                    </div>
+
+                    <table
+                      role="presentation"
+                      cellpadding="0"
+                      cellspacing="0"
+                      border="0"
+                    >
+                      <tr>
+                        <td
+                          bgcolor="#365f51"
+                          style="
+                            border-radius:8px;
+                          "
+                        >
+                          <a
+                            href="${checkinUrl}"
+                            target="_blank"
+                            style="
+                              display:inline-block;
+                              padding:15px 28px;
+                              color:#ffffff;
+                              text-decoration:none;
+                              font-size:15px;
+                              font-weight:bold;
+                            "
+                          >
+                            Complete digital check-in
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <div
+                      style="
+                        margin-top:14px;
+                        color:#887d70;
+                        font-size:11px;
+                        line-height:1.5;
+                      "
+                    >
+                      This link is personal and
+                      applies only to this booking.
+                    </div>
                   </td>
                 </tr>
               </table>
@@ -819,7 +1135,9 @@ function buildEmailHtml(
                 cellpadding="0"
                 cellspacing="0"
                 border="0"
-                style="margin:24px 0;"
+                style="
+                  margin:24px 0;
+                "
               >
                 <tr>
                   <td align="center">
@@ -832,7 +1150,9 @@ function buildEmailHtml(
                       <tr>
                         <td
                           bgcolor="#8a642f"
-                          style="border-radius:8px;"
+                          style="
+                            border-radius:8px;
+                          "
                         >
                           <a
                             href="${DIRECTIONS_URL}"
@@ -871,10 +1191,10 @@ function buildEmailHtml(
                   line-height:1.7;
                 "
               >
-                As check-in is personal, please let
-                us know your
-                <strong>approximate arrival time</strong>
-                so that we can be ready to welcome you.
+                If you know your approximate arrival
+                time, you may let us know so that
+                we can be available if you need
+                any assistance.
               </p>
 
               <p
@@ -883,9 +1203,8 @@ function buildEmailHtml(
                   line-height:1.7;
                 "
               >
-                The main guest will be asked to
-                present an ID card or passport
-                upon arrival.
+                Your personal access code is shown
+                only after completing digital check-in.
               </p>
 
             </td>
@@ -960,14 +1279,34 @@ function buildEmailHtml(
 }
 
 export async function sendPreArrivalEmail(
-  booking: BookingRow
+  booking:
+    BookingRow
 ) {
+  /*
+   * Safety:
+   * never send a digital check-in
+   * email without both a door code
+   * and a unique token.
+   */
+  if (
+    !booking.access_code ||
+    !booking.checkin_token
+  ) {
+    console.warn(
+      `Pre-arrival email skipped for ${booking.code}: access code or check-in token missing.`
+    );
+
+    return;
+  }
+
   const claimed =
     await claim(
       booking.id
     );
 
-  if (!claimed) {
+  if (
+    !claimed
+  ) {
     return;
   }
 
@@ -1058,6 +1397,17 @@ export async function runPreArrivalEmails() {
   const db =
     getDB();
 
+  /*
+   * Normally the email goes
+   * 2 days before arrival.
+   *
+   * If the access code was not
+   * ready at that time, the booking
+   * remains eligible on the next
+   * daily run until arrival day.
+   *
+   * claim() prevents duplicates.
+   */
   const result =
     await db
       .prepare(`
@@ -1068,23 +1418,41 @@ export async function runPreArrivalEmails() {
           check_out,
           guests,
           name,
-          email
+          email,
+          access_code,
+          checkin_token
         FROM bookings
         WHERE
           status = 'confirmed'
           AND payment_status = 'paid'
-          AND check_in = ?
+
+          AND check_in >= ?
+          AND check_in <= ?
+
           AND email IS NOT NULL
           AND email <> ''
+
+          AND access_code IS NOT NULL
+          AND access_code <> ''
+
+          AND checkin_token IS NOT NULL
+          AND checkin_token <> ''
+
+        ORDER BY
+          check_in ASC
       `)
       .bind(
+        today,
         targetDate
       )
-      .all<BookingRow>();
+      .all<
+        BookingRow
+      >();
 
   for (
     const booking
-    of result.results ?? []
+    of result.results ??
+      []
   ) {
     try {
       await sendPreArrivalEmail(
