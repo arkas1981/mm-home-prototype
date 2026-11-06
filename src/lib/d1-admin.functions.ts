@@ -18,6 +18,12 @@ type BookingRow = {
   nightly_prices: string | null;
   deposit_amount: number | null;
   notes: string | null;
+
+  access_code: string | null;
+  checkin_token: string | null;
+  terms_accepted_at: string | null;
+  terms_version: string | null;
+
   name: string;
   email: string;
   phone: string;
@@ -120,6 +126,13 @@ const nightsOf = (
 
 const genId = () =>
   crypto.randomUUID();
+
+const genCheckinToken = () =>
+  `${crypto
+    .randomUUID()
+    .replaceAll("-", "")}${crypto
+    .randomUUID()
+    .replaceAll("-", "")}`;
 
 const genCode = () => {
   const chars =
@@ -595,6 +608,7 @@ export const adminCreateBookingD1 =
               nightly_prices,
               deposit_amount,
               notes,
+              checkin_token,
               name,
               email,
               phone,
@@ -609,6 +623,7 @@ export const adminCreateBookingD1 =
               ?, ?, ?, ?, ?,
               ?, ?, ?, ?, ?,
               ?, ?, ?, ?, ?,
+              ?,
               'confirmed',
               'paid',
               'manual',
@@ -644,6 +659,8 @@ export const adminCreateBookingD1 =
                 0,
                 2000
               ),
+
+            genCheckinToken(),
 
             data.name
               .trim()
@@ -914,6 +931,119 @@ export const adminUpdateBookingD1 =
 
             data.rate,
             total,
+            data.id
+          )
+          .run();
+
+        return {
+          ok:
+            true as const,
+        };
+      }
+    );
+
+/* ACCESS CODE */
+
+export const adminSetAccessCodeD1 =
+  createServerFn({
+    method: "POST",
+  })
+    .inputValidator(
+      (d: {
+        id: string;
+        accessCode: string;
+      }) => d
+    )
+    .handler(
+      async ({ data }) => {
+        await requireAdmin();
+
+        const accessCode =
+          String(
+            data.accessCode ??
+              ""
+          )
+            .trim()
+            .replace(
+              /\s+/g,
+              ""
+            );
+
+        /*
+         * Aqara-style numeric code.
+         *
+         * Empty value is allowed
+         * if the admin wants to
+         * clear the stored code.
+         */
+        if (
+          accessCode &&
+          !/^\d{4,10}$/.test(
+            accessCode
+          )
+        ) {
+          return {
+            error:
+              "invalid_code" as const,
+          };
+        }
+
+        const db =
+          getDB();
+
+        const existing =
+          await db
+            .prepare(`
+              SELECT
+                id,
+                checkin_token
+              FROM bookings
+              WHERE id = ?
+              LIMIT 1
+            `)
+            .bind(
+              data.id
+            )
+            .first<{
+              id: string;
+              checkin_token:
+                | string
+                | null;
+            }>();
+
+        if (!existing) {
+          return {
+            error:
+              "not_found" as const,
+          };
+        }
+
+        /*
+         * Older bookings created
+         * before digital check-in
+         * may not have a token.
+         *
+         * The first time an access
+         * code is saved, create one.
+         */
+        const checkinToken =
+          existing.checkin_token ||
+          genCheckinToken();
+
+        await db
+          .prepare(`
+            UPDATE bookings
+            SET
+              access_code = ?,
+              checkin_token = ?
+            WHERE id = ?
+          `)
+          .bind(
+            accessCode ||
+              null,
+
+            checkinToken,
+
             data.id
           )
           .run();
