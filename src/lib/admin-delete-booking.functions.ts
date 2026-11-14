@@ -77,7 +77,8 @@ export const adminDeleteBookingD1 =
               SELECT
                 id,
                 code,
-                name
+                name,
+                source
               FROM bookings
               WHERE
                 id = ?
@@ -90,6 +91,7 @@ export const adminDeleteBookingD1 =
               id: string;
               code: string;
               name: string;
+              source: string;
             }>();
 
         if (
@@ -102,11 +104,27 @@ export const adminDeleteBookingD1 =
         }
 
         /*
-         * Find any review photos
-         * linked to this booking
-         * before deleting database rows,
-         * so the R2 objects can also
-         * be removed.
+         * Permanent deletion is allowed
+         * only for manually created bookings.
+         *
+         * Online / Stripe bookings must remain
+         * in the historical record and should
+         * be cancelled instead.
+         */
+        if (
+          booking.source !==
+          "manual"
+        ) {
+          return {
+            error:
+              "not_manual" as const,
+          };
+        }
+
+        /*
+         * Find review photos linked to
+         * this booking before deleting
+         * database rows.
          */
         const photoResult =
           await db
@@ -133,11 +151,7 @@ export const adminDeleteBookingD1 =
 
         /*
          * Remove stored review photos
-         * from R2 first.
-         *
-         * A failed individual R2 delete
-         * does not block deletion of the
-         * booking from the database.
+         * from R2.
          */
         if (
           bucket
@@ -158,9 +172,7 @@ export const adminDeleteBookingD1 =
         }
 
         /*
-         * Remove photo database rows
-         * linked to reviews belonging
-         * to this booking.
+         * Remove review photo records.
          */
         await db
           .prepare(`
@@ -179,8 +191,7 @@ export const adminDeleteBookingD1 =
           .run();
 
         /*
-         * Remove reviews belonging
-         * to this booking.
+         * Remove reviews.
          */
         await db
           .prepare(`
@@ -194,9 +205,7 @@ export const adminDeleteBookingD1 =
           .run();
 
         /*
-         * Remove pre-arrival /
-         * post-stay notification claims
-         * belonging to this booking.
+         * Remove email notification records.
          */
         await db
           .prepare(`
@@ -217,6 +226,8 @@ export const adminDeleteBookingD1 =
             DELETE FROM bookings
             WHERE
               id = ?
+              AND source =
+                'manual'
           `)
           .bind(
             id
