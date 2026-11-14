@@ -59,40 +59,16 @@ export function AdminDeleteBooking({
         return;
       }
 
-      const first =
+      const confirmed =
         window.confirm(
-          `ΟΡΙΣΤΙΚΗ ΔΙΑΓΡΑΦΗ
+          `Είσαι σίγουρος ότι θέλεις να διαγράψεις οριστικά την κράτηση ${code};
 
-Η κράτηση ${code} θα διαγραφεί οριστικά.
-
-Η ενέργεια αυτή ΔΕΝ είναι το ίδιο με την «Ακύρωση κράτησης» και δεν μπορεί να αναιρεθεί.
-
-Θέλεις να συνεχίσεις;`
+Η ενέργεια αυτή δεν μπορεί να αναιρεθεί.`
         );
 
       if (
-        !first
+        !confirmed
       ) {
-        return;
-      }
-
-      const typed =
-        window.prompt(
-          `Για τελική επιβεβαίωση γράψε ακριβώς:
-
-${code}`
-        );
-
-      if (
-        typed
-          ?.trim()
-          .toUpperCase() !==
-        code.toUpperCase()
-      ) {
-        alert(
-          "Η διαγραφή ακυρώθηκε. Ο κωδικός κράτησης δεν γράφτηκε σωστά."
-        );
-
         return;
       }
 
