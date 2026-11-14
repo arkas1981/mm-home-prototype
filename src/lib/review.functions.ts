@@ -91,19 +91,22 @@ function todayAthens() {
   const year =
     parts.find(
       (p) =>
-        p.type === "year"
+        p.type ===
+        "year"
     )?.value;
 
   const month =
     parts.find(
       (p) =>
-        p.type === "month"
+        p.type ===
+        "month"
     )?.value;
 
   const day =
     parts.find(
       (p) =>
-        p.type === "day"
+        p.type ===
+        "day"
     )?.value;
 
   return `${year}-${month}-${day}`;
@@ -201,17 +204,25 @@ function extensionForType(
   return null;
 }
 
+function rawBase64(
+  value: string
+) {
+  return value.includes(",")
+    ? value.slice(
+        value.indexOf(
+          ","
+        ) + 1
+      )
+    : value;
+}
+
 function decodeBase64(
   value: string
 ) {
   const normalized =
-    value.includes(",")
-      ? value.slice(
-          value.indexOf(
-            ","
-          ) + 1
-        )
-      : value;
+    rawBase64(
+      value
+    );
 
   const binary =
     atob(
@@ -267,9 +278,14 @@ function validPhotos(
         return false;
       }
 
+      const normalized =
+        rawBase64(
+          photo.base64
+        );
+
       const approximateBytes =
         Math.floor(
-          photo.base64.length *
+          normalized.length *
             0.75
         );
 
@@ -537,22 +553,11 @@ export const submitReview =
       (
         data: {
           code: string;
-
-          /*
-           * Παραμένει προσωρινά προαιρετικό
-           * ώστε να συνεχίσει να λειτουργεί
-           * και η υπάρχουσα φόρμα μέχρι
-           * να την αντικαταστήσουμε.
-           */
           name?: string;
-
           rating: number;
-
           text: string;
-
           fullNameConsent?:
             boolean;
-
           photos?:
             ReviewPhotoInput[];
         }
@@ -700,6 +705,23 @@ export const submitReview =
           };
         }
 
+        const bucket =
+          (
+            env as unknown as CloudflareEnv
+          )
+            .REVIEW_PHOTOS;
+
+        if (
+          photos.length >
+            0 &&
+          !bucket
+        ) {
+          return {
+            error:
+              "storage" as const,
+          };
+        }
+
         const reviewId =
           crypto.randomUUID();
 
@@ -718,25 +740,52 @@ export const submitReview =
           [];
 
         try {
+          /*
+           * Πρώτα δημιουργείται η βασική
+           * αξιολόγηση και μετά οι φωτογραφίες.
+           * Έτσι δεν παραβιάζεται το foreign key
+           * της review_photos.
+           */
+          await db
+            .prepare(`
+              INSERT INTO reviews (
+                id,
+                booking_id,
+                booking_code,
+                name,
+                display_name,
+                full_name_consent,
+                rating,
+                text,
+                status,
+                created_at
+              )
+              VALUES (
+                ?, ?, ?, ?, ?,
+                ?, ?, ?,
+                'pending', ?
+              )
+            `)
+            .bind(
+              reviewId,
+              booking.id,
+              code,
+              fullName,
+              displayName,
+              fullNameConsent
+                ? 1
+                : 0,
+              rating,
+              text,
+              now
+            )
+            .run();
+
           if (
             photos.length >
-            0
+              0 &&
+            bucket
           ) {
-            const bucket =
-              (
-                env as unknown as CloudflareEnv
-              )
-                .REVIEW_PHOTOS;
-
-            if (
-              !bucket
-            ) {
-              return {
-                error:
-                  "storage" as const,
-              };
-            }
-
             for (
               let index =
                 0;
@@ -827,53 +876,12 @@ export const submitReview =
             }
           }
 
-          await db
-            .prepare(`
-              INSERT INTO reviews (
-                id,
-                booking_id,
-                booking_code,
-                name,
-                display_name,
-                full_name_consent,
-                rating,
-                text,
-                status,
-                created_at
-              )
-              VALUES (
-                ?, ?, ?, ?, ?,
-                ?, ?, ?,
-                'pending', ?
-              )
-            `)
-            .bind(
-              reviewId,
-              booking.id,
-              code,
-              fullName,
-              displayName,
-              fullNameConsent
-                ? 1
-                : 0,
-              rating,
-              text,
-              now
-            )
-            .run();
-
           return {
             ok:
               true as const,
           };
         } catch {
           try {
-            const bucket =
-              (
-                env as unknown as CloudflareEnv
-              )
-                .REVIEW_PHOTOS;
-
             if (
               bucket
             ) {
