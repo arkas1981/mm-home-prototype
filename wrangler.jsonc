@@ -16,6 +16,13 @@
     }
   ],
 
+  "r2_buckets": [
+    {
+      "binding": "REVIEW_PHOTOS",
+      "bucket_name": "mmhome-review-photos"
+    }
+  ],
+
   "triggers": {
     "crons": [
       "0 * * * *"
