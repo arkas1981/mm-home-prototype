@@ -23,6 +23,7 @@ import { Route as StayRouteImport } from './routes/stay'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ReviewCodeRouteImport } from './routes/review.$code'
 import { Route as CheckinTokenRouteImport } from './routes/checkin.$token'
+import { Route as ApiReviewPhotoIdRouteImport } from './routes/api/review-photo.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -108,6 +109,12 @@ const CheckinTokenRoute = CheckinTokenRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 
+const ApiReviewPhotoIdRoute = ApiReviewPhotoIdRouteImport.update({
+  id: '/api/review-photo/$id',
+  path: '/api/review-photo/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
   '/checkin/$token': typeof CheckinTokenRoute
+  '/api/review-photo/$id': typeof ApiReviewPhotoIdRoute
 }
 
 export interface FileRoutesByTo {
@@ -140,6 +148,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
   '/checkin/$token': typeof CheckinTokenRoute
+  '/api/review-photo/$id': typeof ApiReviewPhotoIdRoute
 }
 
 export interface FileRoutesById {
@@ -158,6 +167,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/review/$code': typeof ReviewCodeRoute
   '/checkin/$token': typeof CheckinTokenRoute
+  '/api/review-photo/$id': typeof ApiReviewPhotoIdRoute
 }
 
 export interface FileRouteTypes {
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/review/$code'
     | '/checkin/$token'
+    | '/api/review-photo/$id'
 
   fileRoutesByTo: FileRoutesByTo
 
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/review/$code'
     | '/checkin/$token'
+    | '/api/review-photo/$id'
 
   id:
     | '__root__'
@@ -213,6 +225,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/review/$code'
     | '/checkin/$token'
+    | '/api/review-photo/$id'
 
   fileRoutesById: FileRoutesById
 }
@@ -232,6 +245,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ReviewCodeRoute: typeof ReviewCodeRoute
   CheckinTokenRoute: typeof CheckinTokenRoute
+  ApiReviewPhotoIdRoute: typeof ApiReviewPhotoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -347,6 +361,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckinTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+
+    '/api/review-photo/$id': {
+      id: '/api/review-photo/$id'
+      path: '/api/review-photo/$id'
+      fullPath: '/api/review-photo/$id'
+      preLoaderRoute: typeof ApiReviewPhotoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -365,6 +387,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ReviewCodeRoute: ReviewCodeRoute,
   CheckinTokenRoute: CheckinTokenRoute,
+  ApiReviewPhotoIdRoute: ApiReviewPhotoIdRoute,
 }
 
 export const routeTree =
