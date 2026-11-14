@@ -9,8 +9,18 @@ import {
 } from "@tanstack/react-start";
 
 import {
+  CheckCircle2,
+  ImageIcon,
+  ShieldCheck,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+
+import {
   adminDeleteReviewD1,
+  adminDeleteReviewPhotoD1,
   adminReviewsD1,
+  adminSetReviewPhotoStatusD1,
   adminSetReviewStatusD1,
   type AdminReviewRow,
 } from "@/lib/admin-reviews.functions";
@@ -57,6 +67,26 @@ function statusLabel(
   return "Σε αναμονή";
 }
 
+function photoStatusLabel(
+  status: string
+) {
+  if (
+    status ===
+    "approved"
+  ) {
+    return "Εγκεκριμένη";
+  }
+
+  if (
+    status ===
+    "rejected"
+  ) {
+    return "Απορριφθείσα";
+  }
+
+  return "Σε αναμονή";
+}
+
 export function AdminReviews() {
   const getReviews =
     useServerFn(
@@ -68,9 +98,19 @@ export function AdminReviews() {
       adminSetReviewStatusD1
     );
 
+  const setPhotoStatus =
+    useServerFn(
+      adminSetReviewPhotoStatusD1
+    );
+
   const deleteReview =
     useServerFn(
       adminDeleteReviewD1
+    );
+
+  const deletePhoto =
+    useServerFn(
+      adminDeleteReviewPhotoD1
     );
 
   const [
@@ -141,6 +181,24 @@ export function AdminReviews() {
       await load();
     };
 
+  const changePhotoStatus =
+    async (
+      id: string,
+      status:
+        | "pending"
+        | "approved"
+        | "rejected"
+    ) => {
+      await setPhotoStatus({
+        data: {
+          id,
+          status,
+        },
+      });
+
+      await load();
+    };
+
   const remove =
     async (
       review: AdminReviewRow
@@ -166,6 +224,30 @@ export function AdminReviews() {
       await load();
     };
 
+  const removePhoto =
+    async (
+      id: string
+    ) => {
+      const confirmed =
+        window.confirm(
+          "Να διαγραφεί οριστικά αυτή η φωτογραφία;"
+        );
+
+      if (
+        !confirmed
+      ) {
+        return;
+      }
+
+      await deletePhoto({
+        data: {
+          id,
+        },
+      });
+
+      await load();
+    };
+
   if (
     loading
   ) {
@@ -177,7 +259,7 @@ export function AdminReviews() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {[
         "pending",
         "approved",
@@ -221,7 +303,7 @@ export function AdminReviews() {
                   Δεν υπάρχουν αξιολογήσεις σε αυτή την κατηγορία.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {list.map(
                     (
                       review
@@ -232,15 +314,47 @@ export function AdminReviews() {
                         }
                         className="panel p-5"
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                           <div>
-                            <div className="font-medium">
+                            <div className="font-medium text-base">
                               {
                                 review.name
                               }
                             </div>
 
-                            <div className="text-primary text-lg mt-1">
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Δημόσια εμφάνιση:{" "}
+                              <strong>
+                                {
+                                  review.display_name ||
+                                  review.name
+                                }
+                              </strong>
+                            </div>
+
+                            <div className="mt-1 flex items-center gap-2 text-xs">
+                              <ShieldCheck
+                                size={
+                                  15
+                                }
+                                className="text-olive"
+                              />
+
+                              <span className="text-olive font-medium">
+                                Επιβεβαιωμένη διαμονή
+                              </span>
+                            </div>
+
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Πλήρες ονοματεπώνυμο δημόσια:{" "}
+                              {
+                                review.full_name_consent
+                                  ? "Ναι"
+                                  : "Όχι"
+                              }
+                            </div>
+
+                            <div className="text-primary text-lg mt-2">
                               {"★".repeat(
                                 review.rating
                               )}
@@ -256,6 +370,7 @@ export function AdminReviews() {
 
                           <div className="text-xs text-muted-foreground sm:text-right">
                             <div>
+                              Κράτηση:{" "}
                               {
                                 review.booking_code
                               }
@@ -275,7 +390,135 @@ export function AdminReviews() {
                           }
                         </p>
 
-                        <div className="flex flex-wrap gap-4 mt-5 text-xs">
+                        {review.photos.length >
+                          0 && (
+                          <div className="mt-5">
+                            <div className="flex items-center gap-2 mb-3 text-sm font-medium">
+                              <ImageIcon
+                                size={
+                                  17
+                                }
+                              />
+
+                              Φωτογραφίες επισκέπτη
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              {review.photos.map(
+                                (
+                                  photo
+                                ) => (
+                                  <div
+                                    key={
+                                      photo.id
+                                    }
+                                    className="border rounded-xl overflow-hidden bg-secondary/20"
+                                  >
+                                    <img
+                                      src={
+                                        photo.url
+                                      }
+                                      alt="Φωτογραφία αξιολόγησης"
+                                      className="w-full aspect-square object-cover"
+                                    />
+
+                                    <div className="p-3 space-y-2">
+                                      <div className="text-xs text-muted-foreground">
+                                        {
+                                          photoStatusLabel(
+                                            photo.status
+                                          )
+                                        }
+                                      </div>
+
+                                      <div className="flex flex-wrap gap-3 text-xs">
+                                        {photo.status !==
+                                          "approved" && (
+                                          <button
+                                            type="button"
+                                            className="text-olive flex items-center gap-1"
+                                            onClick={() =>
+                                              changePhotoStatus(
+                                                photo.id,
+                                                "approved"
+                                              )
+                                            }
+                                          >
+                                            <CheckCircle2
+                                              size={
+                                                14
+                                              }
+                                            />
+
+                                            Έγκριση
+                                          </button>
+                                        )}
+
+                                        {photo.status !==
+                                          "rejected" && (
+                                          <button
+                                            type="button"
+                                            className="text-destructive flex items-center gap-1"
+                                            onClick={() =>
+                                              changePhotoStatus(
+                                                photo.id,
+                                                "rejected"
+                                              )
+                                            }
+                                          >
+                                            <XCircle
+                                              size={
+                                                14
+                                              }
+                                            />
+
+                                            Απόρριψη
+                                          </button>
+                                        )}
+
+                                        {photo.status !==
+                                          "pending" && (
+                                          <button
+                                            type="button"
+                                            className="text-muted-foreground"
+                                            onClick={() =>
+                                              changePhotoStatus(
+                                                photo.id,
+                                                "pending"
+                                              )
+                                            }
+                                          >
+                                            Σε αναμονή
+                                          </button>
+                                        )}
+
+                                        <button
+                                          type="button"
+                                          className="text-destructive flex items-center gap-1 font-medium"
+                                          onClick={() =>
+                                            removePhoto(
+                                              photo.id
+                                            )
+                                          }
+                                        >
+                                          <Trash2
+                                            size={
+                                              14
+                                            }
+                                          />
+
+                                          Διαγραφή
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-4 mt-6 text-xs">
                           {review.status !==
                             "approved" && (
                             <button
@@ -287,7 +530,7 @@ export function AdminReviews() {
                                 )
                               }
                             >
-                              Έγκριση
+                              Έγκριση αξιολόγησης
                             </button>
                           )}
 
@@ -302,7 +545,7 @@ export function AdminReviews() {
                                 )
                               }
                             >
-                              Απόρριψη
+                              Απόρριψη αξιολόγησης
                             </button>
                           )}
 
@@ -329,7 +572,7 @@ export function AdminReviews() {
                               )
                             }
                           >
-                            Διαγραφή
+                            Διαγραφή αξιολόγησης
                           </button>
                         </div>
                       </div>
