@@ -4,11 +4,16 @@ import {
 
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
 import {
+  Camera,
+  CheckCircle2,
+  ImagePlus,
   Star,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -24,6 +29,17 @@ import {
   submitReview,
 } from "@/lib/review.functions";
 
+type SelectedPhoto = {
+  file: File;
+  preview: string;
+};
+
+type UploadPhoto = {
+  name: string;
+  type: string;
+  base64: string;
+};
+
 export const Route =
   createFileRoute(
     "/review/$code"
@@ -38,6 +54,129 @@ export const Route =
     component:
       WriteReview,
   });
+
+function publicNamePreview(
+  fullName: string
+) {
+  const cleaned =
+    fullName
+      .trim()
+      .replace(
+        /\s+/g,
+        " "
+      );
+
+  const parts =
+    cleaned
+      .split(" ")
+      .filter(
+        Boolean
+      );
+
+  if (
+    parts.length <=
+    1
+  ) {
+    return cleaned;
+  }
+
+  const firstName =
+    parts[0];
+
+  const surname =
+    parts[
+      parts.length -
+        1
+    ];
+
+  const initial =
+    surname
+      ?.charAt(0)
+      .toLocaleUpperCase(
+        "el-GR"
+      );
+
+  return initial
+    ? `${firstName} ${initial}.`
+    : firstName;
+}
+
+function fileToBase64(
+  file: File
+) {
+  return new Promise<
+    string
+  >(
+    (
+      resolve,
+      reject
+    ) => {
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        () => {
+          if (
+            typeof reader.result ===
+            "string"
+          ) {
+            resolve(
+              reader.result
+            );
+
+            return;
+          }
+
+          reject(
+            new Error(
+              "Δεν ήταν δυνατή η ανάγνωση της φωτογραφίας."
+            )
+          );
+        };
+
+      reader.onerror =
+        () => {
+          reject(
+            new Error(
+              "Δεν ήταν δυνατή η ανάγνωση της φωτογραφίας."
+            )
+          );
+        };
+
+      reader.readAsDataURL(
+        file
+      );
+    }
+  );
+}
+
+function formatFileSize(
+  bytes: number
+) {
+  if (
+    bytes <
+    1024 *
+      1024
+  ) {
+    return `${Math.max(
+      1,
+      Math.round(
+        bytes /
+          1024
+      )
+    )} KB`;
+  }
+
+  return `${(
+    bytes /
+    (
+      1024 *
+      1024
+    )
+  ).toFixed(
+    1
+  )} MB`;
+}
 
 function WriteReview() {
   const {
@@ -78,6 +217,14 @@ function WriteReview() {
     );
 
   const [
+    checkOut,
+    setCheckOut,
+  ] =
+    useState(
+      ""
+    );
+
+  const [
     text,
     setText,
   ] =
@@ -92,6 +239,22 @@ function WriteReview() {
     useState(
       5
     );
+
+  const [
+    fullNameConsent,
+    setFullNameConsent,
+  ] =
+    useState(
+      false
+    );
+
+  const [
+    photos,
+    setPhotos,
+  ] =
+    useState<
+      SelectedPhoto[]
+    >([]);
 
   const [
     done,
@@ -115,6 +278,20 @@ function WriteReview() {
   ] =
     useState(
       ""
+    );
+
+  const publicName =
+    useMemo(
+      () =>
+        fullNameConsent
+          ? name
+          : publicNamePreview(
+              name
+            ),
+      [
+        name,
+        fullNameConsent,
+      ]
     );
 
   useEffect(
@@ -165,6 +342,12 @@ function WriteReview() {
                 .name ??
                 ""
             );
+
+            setCheckOut(
+              result.booking
+                .checkOut ??
+                ""
+            );
           } catch {
             if (
               active
@@ -196,11 +379,167 @@ function WriteReview() {
     ]
   );
 
+  useEffect(
+    () => {
+      return () => {
+        photos.forEach(
+          (
+            photo
+          ) => {
+            URL.revokeObjectURL(
+              photo.preview
+            );
+          }
+        );
+      };
+    },
+    [
+      photos,
+    ]
+  );
+
+  const selectPhotos =
+    (
+      files:
+        FileList |
+        null
+    ) => {
+      if (
+        !files
+      ) {
+        return;
+      }
+
+      setError(
+        ""
+      );
+
+      const incoming =
+        Array.from(
+          files
+        );
+
+      if (
+        photos.length +
+          incoming.length >
+        3
+      ) {
+        setError(
+          "Μπορείτε να ανεβάσετε έως 3 φωτογραφίες."
+        );
+
+        return;
+      }
+
+      const allowedTypes =
+        [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+        ];
+
+      for (
+        const file of
+        incoming
+      ) {
+        if (
+          !allowedTypes.includes(
+            file.type
+          )
+        ) {
+          setError(
+            "Επιτρέπονται μόνο φωτογραφίες JPG, PNG ή WebP."
+          );
+
+          return;
+        }
+
+        if (
+          file.size >
+          5 *
+            1024 *
+            1024
+        ) {
+          setError(
+            "Κάθε φωτογραφία πρέπει να είναι έως 5 MB."
+          );
+
+          return;
+        }
+
+        if (
+          file.size ===
+          0
+        ) {
+          setError(
+            "Μία από τις φωτογραφίες δεν είναι έγκυρη."
+          );
+
+          return;
+        }
+      }
+
+      const selected =
+        incoming.map(
+          (
+            file
+          ) => ({
+            file,
+
+            preview:
+              URL.createObjectURL(
+                file
+              ),
+          })
+        );
+
+      setPhotos(
+        (
+          current
+        ) => [
+          ...current,
+          ...selected,
+        ]
+      );
+    };
+
+  const removePhoto =
+    (
+      index: number
+    ) => {
+      setPhotos(
+        (
+          current
+        ) => {
+          const target =
+            current[
+              index
+            ];
+
+          if (
+            target
+          ) {
+            URL.revokeObjectURL(
+              target.preview
+            );
+          }
+
+          return current.filter(
+            (
+              _,
+              currentIndex
+            ) =>
+              currentIndex !==
+              index
+          );
+        }
+      );
+    };
+
   const submit =
     async () => {
       if (
         sending ||
-        !name.trim() ||
         !text.trim()
       ) {
         return;
@@ -215,13 +554,41 @@ function WriteReview() {
       );
 
       try {
+        const uploadPhotos:
+          UploadPhoto[] =
+          [];
+
+        for (
+          const photo of
+          photos
+        ) {
+          const base64 =
+            await fileToBase64(
+              photo.file
+            );
+
+          uploadPhotos.push({
+            name:
+              photo.file
+                .name,
+
+            type:
+              photo.file
+                .type,
+
+            base64,
+          });
+        }
+
         const result =
           await submitReview({
             data: {
               code,
-              name,
               rating,
               text,
+              fullNameConsent,
+              photos:
+                uploadPhotos,
             },
           });
 
@@ -240,6 +607,17 @@ function WriteReview() {
             return;
           }
 
+          if (
+            result.error ===
+            "storage"
+          ) {
+            setError(
+              "Δεν ήταν δυνατή η αποθήκευση των φωτογραφιών. Παρακαλώ δοκιμάστε ξανά."
+            );
+
+            return;
+          }
+
           setError(
             "Δεν ήταν δυνατή η αποθήκευση της αξιολόγησης."
           );
@@ -252,7 +630,7 @@ function WriteReview() {
         );
       } catch {
         setError(
-          "Παρουσιάστηκε πρόβλημα. Παρακαλώ δοκιμάστε ξανά."
+          "Παρουσιάστηκε πρόβλημα κατά την αποστολή. Παρακαλώ δοκιμάστε ξανά."
         );
       } finally {
         setSending(
@@ -270,7 +648,7 @@ function WriteReview() {
       <div
         className="
           mx-auto
-          max-w-xl
+          max-w-2xl
           px-5
         "
       >
@@ -307,7 +685,7 @@ function WriteReview() {
                 text-muted-foreground
               "
             >
-              Ο σύνδεσμος δεν αντιστοιχεί σε ολοκληρωμένη διαμονή.
+              Ο σύνδεσμος δεν αντιστοιχεί σε επιβεβαιωμένη και ολοκληρωμένη διαμονή.
             </p>
           </div>
         ) : done ||
@@ -319,6 +697,17 @@ function WriteReview() {
               text-center
             "
           >
+            <CheckCircle2
+              size={
+                44
+              }
+              className="
+                mx-auto
+                mb-4
+                text-olive
+              "
+            />
+
             <div
               className="
                 font-serif
@@ -335,22 +724,33 @@ function WriteReview() {
                 leading-relaxed
               "
             >
-              Η αξιολόγησή σας καταχωρήθηκε και σας ευχαριστούμε που αφιερώσατε χρόνο για να μοιραστείτε την εμπειρία σας.
+              Η αξιολόγησή σας καταχωρήθηκε και θα δημοσιευτεί μετά από έλεγχο.
+            </p>
+
+            <p
+              className="
+                mt-3
+                text-sm
+                text-muted-foreground
+              "
+            >
+              Σας ευχαριστούμε που αφιερώσατε χρόνο για να μοιραστείτε την εμπειρία σας στο MM Home.
             </p>
           </div>
         ) : (
           <div
             className="
               panel
-              p-8
-              space-y-6
+              p-6
+              sm:p-8
+              space-y-8
             "
           >
             <div>
               <div
                 className="
                   font-serif
-                  text-2xl
+                  text-3xl
                   mb-2
                 "
               >
@@ -363,8 +763,65 @@ function WriteReview() {
                   leading-relaxed
                 "
               >
-                Η γνώμη σας μας βοηθά να βελτιώνουμε συνεχώς την εμπειρία των επισκεπτών του MM Home.
+                Η γνώμη σας βοηθά τους επόμενους επισκέπτες να γνωρίσουν καλύτερα το MM Home.
               </p>
+            </div>
+
+            <div
+              className="
+                rounded-xl
+                border
+                p-4
+                bg-secondary/30
+              "
+            >
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-2
+                  text-sm
+                  font-medium
+                "
+              >
+                <CheckCircle2
+                  size={
+                    18
+                  }
+                  className="
+                    text-olive
+                  "
+                />
+
+                Επιβεβαιωμένη διαμονή
+              </div>
+
+              <div
+                className="
+                  mt-2
+                  text-sm
+                  text-muted-foreground
+                "
+              >
+                Η αξιολόγηση συνδέεται αποκλειστικά με την πραγματική κράτησή σας.
+              </div>
+
+              {checkOut && (
+                <div
+                  className="
+                    mt-1
+                    text-xs
+                    text-muted-foreground
+                  "
+                >
+                  Ολοκλήρωση διαμονής:{" "}
+                  {new Date(
+                    `${checkOut}T12:00:00`
+                  ).toLocaleDateString(
+                    "el-GR"
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -372,7 +829,7 @@ function WriteReview() {
                 className="
                   text-sm
                   font-medium
-                  mb-2
+                  mb-3
                 "
               >
                 Αξιολόγηση
@@ -406,10 +863,14 @@ function WriteReview() {
                         )
                       }
                       aria-label={`${n} αστέρια`}
+                      className="
+                        transition-transform
+                        hover:scale-110
+                      "
                     >
                       <Star
                         size={
-                          32
+                          34
                         }
                         fill={
                           n <=
@@ -433,27 +894,115 @@ function WriteReview() {
                   mb-2
                 "
               >
-                Όνομα
+                Ονοματεπώνυμο κράτησης
               </label>
 
               <input
-                className="field"
+                className="
+                  field
+                  bg-secondary/30
+                "
                 value={
                   name
                 }
-                onChange={(
-                  e
-                ) =>
-                  setName(
-                    e
-                      .target
-                      .value
-                  )
-                }
-                maxLength={
-                  60
-                }
+                readOnly
               />
+
+              <p
+                className="
+                  mt-2
+                  text-xs
+                  text-muted-foreground
+                "
+              >
+                Το όνομα προέρχεται από την επιβεβαιωμένη κράτηση και δεν μπορεί να τροποποιηθεί από τη φόρμα αξιολόγησης.
+              </p>
+            </div>
+
+            <div
+              className="
+                rounded-xl
+                border
+                p-4
+              "
+            >
+              <label
+                className="
+                  flex
+                  items-start
+                  gap-3
+                  cursor-pointer
+                "
+              >
+                <input
+                  type="checkbox"
+                  checked={
+                    fullNameConsent
+                  }
+                  onChange={(
+                    e
+                  ) =>
+                    setFullNameConsent(
+                      e
+                        .target
+                        .checked
+                    )
+                  }
+                  className="
+                    mt-1
+                    accent-primary
+                    scale-110
+                  "
+                />
+
+                <span>
+                  <span
+                    className="
+                      block
+                      text-sm
+                      font-medium
+                    "
+                  >
+                    Επιτρέπω τη δημόσια εμφάνιση του πλήρους ονοματεπωνύμου μου μαζί με την αξιολόγησή μου.
+                  </span>
+
+                  <span
+                    className="
+                      block
+                      mt-1
+                      text-xs
+                      text-muted-foreground
+                      leading-relaxed
+                    "
+                  >
+                    Αν δεν επιλεγεί, θα εμφανιστεί μόνο το μικρό σας όνομα και το αρχικό του επωνύμου.
+                  </span>
+                </span>
+              </label>
+
+              <div
+                className="
+                  mt-4
+                  pt-4
+                  border-t
+                  text-sm
+                "
+              >
+                Δημόσια εμφάνιση:{" "}
+                <strong>
+                  {publicName}
+                </strong>
+                {" "}
+                ·{" "}
+                <span
+                  className="
+                    text-olive
+                    font-medium
+                  "
+                >
+                  ✓ Επιβεβαιωμένη διαμονή
+                </span>
+              </div>
             </div>
 
             <div>
@@ -471,7 +1020,7 @@ function WriteReview() {
               <textarea
                 className="
                   field
-                  min-h-36
+                  min-h-40
                 "
                 placeholder="Γράψτε λίγα λόγια για τη διαμονή σας..."
                 value={
@@ -490,17 +1039,241 @@ function WriteReview() {
                   1000
                 }
               />
+
+              <div
+                className="
+                  mt-1
+                  text-right
+                  text-xs
+                  text-muted-foreground
+                "
+              >
+                {text.length}
+                /1000
+              </div>
+            </div>
+
+            <div>
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-2
+                  mb-2
+                "
+              >
+                <Camera
+                  size={
+                    18
+                  }
+                />
+
+                <span
+                  className="
+                    text-sm
+                    font-medium
+                  "
+                >
+                  Φωτογραφίες από τη διαμονή σας
+                </span>
+
+                <span
+                  className="
+                    text-xs
+                    text-muted-foreground
+                  "
+                >
+                  προαιρετικά
+                </span>
+              </div>
+
+              <p
+                className="
+                  text-xs
+                  text-muted-foreground
+                  leading-relaxed
+                  mb-4
+                "
+              >
+                Μπορείτε να προσθέσετε έως 3 δικές σας φωτογραφίες από το MM Home. Οι φωτογραφίες θα δημοσιευτούν μόνο μετά από έλεγχο μαζί με την αξιολόγηση.
+              </p>
+
+              {photos.length <
+                3 && (
+                <label
+                  className="
+                    flex
+                    flex-col
+                    items-center
+                    justify-center
+                    gap-2
+                    border
+                    border-dashed
+                    rounded-xl
+                    p-7
+                    cursor-pointer
+                    hover:bg-secondary/30
+                    transition-colors
+                  "
+                >
+                  <ImagePlus
+                    size={
+                      30
+                    }
+                    className="
+                      text-primary
+                    "
+                  />
+
+                  <span
+                    className="
+                      text-sm
+                      font-medium
+                    "
+                  >
+                    Προσθήκη φωτογραφιών
+                  </span>
+
+                  <span
+                    className="
+                      text-xs
+                      text-muted-foreground
+                    "
+                  >
+                    JPG, PNG ή WebP · έως 5 MB η καθεμία
+                  </span>
+
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    className="hidden"
+                    onChange={(
+                      e
+                    ) => {
+                      selectPhotos(
+                        e
+                          .target
+                          .files
+                      );
+
+                      e.target.value =
+                        "";
+                    }}
+                  />
+                </label>
+              )}
+
+              {photos.length >
+                0 && (
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-3
+                    gap-3
+                    mt-4
+                  "
+                >
+                  {photos.map(
+                    (
+                      photo,
+                      index
+                    ) => (
+                      <div
+                        key={`${photo.file.name}-${index}`}
+                        className="
+                          relative
+                          overflow-hidden
+                          rounded-xl
+                          border
+                          bg-secondary/20
+                        "
+                      >
+                        <img
+                          src={
+                            photo.preview
+                          }
+                          alt={`Φωτογραφία ${index + 1}`}
+                          className="
+                            w-full
+                            aspect-square
+                            object-cover
+                          "
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removePhoto(
+                              index
+                            )
+                          }
+                          aria-label="Αφαίρεση φωτογραφίας"
+                          className="
+                            absolute
+                            top-2
+                            right-2
+                            rounded-full
+                            bg-background/90
+                            p-2
+                            shadow
+                          "
+                        >
+                          <Trash2
+                            size={
+                              16
+                            }
+                          />
+                        </button>
+
+                        <div
+                          className="
+                            px-3
+                            py-2
+                            text-xs
+                            text-muted-foreground
+                          "
+                        >
+                          {formatFileSize(
+                            photo.file
+                              .size
+                          )}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+
+              {photos.length >
+                0 && (
+                <p
+                  className="
+                    mt-3
+                    text-xs
+                    text-muted-foreground
+                  "
+                >
+                  {photos.length} από 3 φωτογραφίες επιλεγμένες
+                </p>
+              )}
             </div>
 
             {error && (
-              <p
+              <div
                 className="
+                  rounded-xl
+                  border
+                  border-red-200
+                  bg-red-50
+                  p-4
                   text-sm
-                  text-red-600
+                  text-red-700
                 "
               >
                 {error}
-              </p>
+              </div>
             )}
 
             <button
@@ -510,16 +1283,28 @@ function WriteReview() {
                 w-full
               "
               disabled={
-                sending
+                sending ||
+                !text.trim()
               }
               onClick={
                 submit
               }
             >
               {sending
-                ? "Αποστολή..."
+                ? "Αποστολή αξιολόγησης..."
                 : "Υποβολή αξιολόγησης"}
             </button>
+
+            <p
+              className="
+                text-xs
+                text-center
+                text-muted-foreground
+                leading-relaxed
+              "
+            >
+              Η αξιολόγηση και τυχόν φωτογραφίες δεν δημοσιεύονται αυτόματα. Ελέγχονται πριν εμφανιστούν δημόσια στο MM Home.
+            </p>
           </div>
         )}
       </div>
