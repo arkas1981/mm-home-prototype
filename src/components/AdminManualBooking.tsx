@@ -14,6 +14,10 @@ import {
 } from "@/lib/d1-admin.functions";
 
 import {
+  AdminDeleteBooking,
+} from "@/components/AdminDeleteBooking";
+
+import {
   addDays,
   quote,
   validateStay,
@@ -1138,6 +1142,49 @@ export function AdminManualBooking({
             : "Αποθήκευση κράτησης"}
         </button>
       </div>
+
+      {editing &&
+        booking && (
+          <div className="border-t pt-5">
+            <div
+              className="
+                rounded-xl
+                border
+                border-destructive/40
+                bg-destructive/5
+                p-4
+              "
+            >
+              <p className="font-medium text-destructive">
+                Οριστική διαγραφή κράτησης
+              </p>
+
+              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                Η οριστική διαγραφή αφαιρεί τη χειροκίνητη κράτηση από τη βάση δεδομένων και δεν μπορεί να αναιρεθεί. Για κανονική ακύρωση χρησιμοποίησε το ξεχωριστό κουμπί «Ακύρωση κράτησης» στη σελίδα της κράτησης.
+              </p>
+
+              <div className="mt-4">
+                <AdminDeleteBooking
+                  id={
+                    booking.id
+                  }
+                  code={
+                    booking.code
+                  }
+                  source={
+                    booking.source
+                  }
+                  onDeleted={
+                    async () => {
+                      await reload();
+                      onDone();
+                    }
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
