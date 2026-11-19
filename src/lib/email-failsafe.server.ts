@@ -10,7 +10,23 @@ import {
   sendPostStayEmail,
 } from "./poststay-email.server";
 
-type BookingRow = {
+type PreArrivalBookingRow = {
+  id: string;
+  code: string;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  name: string;
+  email: string;
+  access_code:
+    | string
+    | null;
+  checkin_token:
+    | string
+    | null;
+};
+
+type PostStayBookingRow = {
   id: string;
   code: string;
   check_in: string;
@@ -155,7 +171,9 @@ async function runPreArrivalFailSafe() {
           b.check_out,
           b.guests,
           b.name,
-          b.email
+          b.email,
+          b.access_code,
+          b.checkin_token
         FROM bookings b
         WHERE
           b.status =
@@ -171,6 +189,14 @@ async function runPreArrivalFailSafe() {
           b.email IS NOT NULL
           AND
           b.email <> ''
+          AND
+          b.access_code IS NOT NULL
+          AND
+          b.access_code <> ''
+          AND
+          b.checkin_token IS NOT NULL
+          AND
+          b.checkin_token <> ''
           AND NOT EXISTS (
             SELECT 1
             FROM booking_notifications n
@@ -188,7 +214,7 @@ async function runPreArrivalFailSafe() {
         today,
         maxCheckIn
       )
-      .all<BookingRow>();
+      .all<PreArrivalBookingRow>();
 
   for (
     const booking
@@ -300,7 +326,7 @@ async function runPostStayFailSafe() {
         earliestDueCheckout,
         latestDueCheckout
       )
-      .all<BookingRow>();
+      .all<PostStayBookingRow>();
 
   for (
     const booking
