@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mm-home-prototype",
   "compatibility_date": "2026-10-14",
-  "main": ".output/server/index.mjs",
+  "main": "src/server.ts",
 
   "assets": {
     "directory": ".output/public"
