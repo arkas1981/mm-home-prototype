@@ -49,9 +49,7 @@ const SITE_URL =
 
 const LOGO_URL =
   `${SITE_URL}${
-    logoAsset.startsWith(
-      "/"
-    )
+    logoAsset.startsWith("/")
       ? ""
       : "/"
   }${logoAsset}`;
@@ -61,6 +59,20 @@ const HERO_URL =
 
 const DIRECTIONS_URL =
   "https://www.google.com/maps/dir/?api=1&destination=39.550449832990786%2C21.765204641597695";
+
+const WIFI_NAME =
+  "MM_HOME";
+
+const WIFI_PASSWORD =
+  "kub4y9ucysfu7XCA";
+
+const WIFI_DATA =
+  `WIFI:T:WPA;S:${WIFI_NAME};P:${WIFI_PASSWORD};;`;
+
+const WIFI_QR_URL =
+  `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
+    WIFI_DATA
+  )}`;
 
 function todayAthens() {
   const parts =
@@ -85,27 +97,21 @@ function todayAthens() {
 
   const year =
     parts.find(
-      (
-        p
-      ) =>
+      (p) =>
         p.type ===
         "year"
     )?.value;
 
   const month =
     parts.find(
-      (
-        p
-      ) =>
+      (p) =>
         p.type ===
         "month"
     )?.value;
 
   const day =
     parts.find(
-      (
-        p
-      ) =>
+      (p) =>
         p.type ===
         "day"
     )?.value;
@@ -339,9 +345,7 @@ function buildEmailHtml(
     content="width=device-width, initial-scale=1"
   >
 
-  <title>
-    MM Home
-  </title>
+  <title>MM Home</title>
 </head>
 
 <body
@@ -445,6 +449,7 @@ function buildEmailHtml(
                 στα Τρίκαλα!
               </p>
 
+              <!-- BOOKING DETAILS -->
               <table
                 role="presentation"
                 width="100%"
@@ -685,6 +690,7 @@ function buildEmailHtml(
                 </tr>
               </table>
 
+              <!-- ARRIVAL -->
               <table
                 role="presentation"
                 width="100%"
@@ -693,7 +699,70 @@ function buildEmailHtml(
                 border="0"
                 style="
                   width:100%;
-                  margin-bottom:20px;
+                  background:#fff8ed;
+                  border:1px solid #ead9bf;
+                  border-radius:12px;
+                  margin:0 0 26px;
+                "
+              >
+                <tr>
+                  <td
+                    style="
+                      padding:22px 20px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-family:Georgia,'Times New Roman',serif;
+                        font-size:20px;
+                        font-weight:bold;
+                        color:#7a592e;
+                        margin-bottom:10px;
+                      "
+                    >
+                      Άφιξη και υποδοχή
+                    </div>
+
+                    <div
+                      style="
+                        font-size:14px;
+                        line-height:1.7;
+                        color:#4d463f;
+                      "
+                    >
+                      Παρακαλούμε να μας ενημερώσετε περίπου
+                      <strong>1 ώρα πριν από την άφιξή σας</strong>,
+                      ώστε να κανονίσουμε την παράδοση του
+                      κλειδιού της κεντρικής εισόδου της
+                      πολυκατοικίας και να σας κάνουμε μια
+                      σύντομη ξενάγηση στο MM Home.
+                    </div>
+
+                    <div
+                      style="
+                        font-size:14px;
+                        line-height:1.7;
+                        color:#4d463f;
+                        margin-top:12px;
+                      "
+                    >
+                      Η <strong>εξόφληση της διαμονής</strong>
+                      θα πραγματοποιηθεί κατά την άφιξή σας.
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- LOCATION -->
+              <table
+                role="presentation"
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
+                style="
+                  width:100%;
+                  margin-bottom:18px;
                 "
               >
                 <tr>
@@ -771,6 +840,7 @@ function buildEmailHtml(
                 </tr>
               </table>
 
+              <!-- WIFI -->
               <table
                 role="presentation"
                 width="100%"
@@ -779,89 +849,101 @@ function buildEmailHtml(
                 border="0"
                 style="
                   width:100%;
-                  border-top:1px solid #eadfce;
-                  border-bottom:1px solid #eadfce;
-                  margin-bottom:24px;
+                  background:#f7f3ec;
+                  border-radius:12px;
+                  margin:0 0 28px;
                 "
               >
                 <tr>
                   <td
+                    align="center"
                     style="
-                      padding:15px 4px;
-                      width:32px;
-                      vertical-align:top;
+                      padding:24px 20px;
                     "
                   >
-                    🚗
-                  </td>
+                    <div
+                      style="
+                        font-family:Georgia,'Times New Roman',serif;
+                        font-size:22px;
+                        font-weight:bold;
+                        color:#7a592e;
+                        margin-bottom:6px;
+                      "
+                    >
+                      Wi-Fi
+                    </div>
 
-                  <td
-                    style="
-                      padding:15px 0;
-                      font-size:14px;
-                      line-height:1.6;
-                    "
-                  >
-                    Η στάθμευση γίνεται στον δρόμο
-                    και συνήθως είναι εύκολη.
-                  </td>
-                </tr>
+                    <div
+                      style="
+                        font-size:14px;
+                        line-height:1.6;
+                        color:#766858;
+                        margin-bottom:18px;
+                      "
+                    >
+                      Σαρώστε το QR code για να συνδεθείτε.
+                    </div>
 
-                <tr>
-                  <td
-                    style="
-                      padding:15px 4px;
-                      width:32px;
-                      vertical-align:top;
-                      border-top:1px solid #eee7dd;
-                    "
-                  >
-                    🕒
-                  </td>
+                    <img
+                      src="${WIFI_QR_URL}"
+                      alt="MM Home Wi-Fi QR"
+                      width="220"
+                      style="
+                        display:block;
+                        width:220px;
+                        height:220px;
+                        max-width:100%;
+                        margin:0 auto;
+                        border:10px solid #ffffff;
+                        border-radius:12px;
+                      "
+                    >
 
-                  <td
-                    style="
-                      padding:15px 0;
-                      border-top:1px solid #eee7dd;
-                      font-size:14px;
-                      line-height:1.6;
-                    "
-                  >
-                    Αν γνωρίζετε περίπου την ώρα
-                    άφιξής σας, μπορείτε να μας
-                    ενημερώσετε ώστε να είμαστε
-                    διαθέσιμοι αν χρειαστείτε
-                    οποιαδήποτε βοήθεια.
-                  </td>
-                </tr>
+                    <div
+                      style="
+                        margin-top:18px;
+                        font-size:13px;
+                        color:#766858;
+                      "
+                    >
+                      Δίκτυο
+                    </div>
 
-                <tr>
-                  <td
-                    style="
-                      padding:15px 4px;
-                      width:32px;
-                      vertical-align:top;
-                      border-top:1px solid #eee7dd;
-                    "
-                  >
-                    🔑
-                  </td>
+                    <div
+                      style="
+                        margin-top:3px;
+                        font-size:17px;
+                        font-weight:bold;
+                      "
+                    >
+                      ${WIFI_NAME}
+                    </div>
 
-                  <td
-                    style="
-                      padding:15px 0;
-                      border-top:1px solid #eee7dd;
-                      font-size:14px;
-                      line-height:1.6;
-                    "
-                  >
-                    Ο προσωπικός κωδικός εισόδου
-                    εμφανίζεται μόνο μετά την
-                    ολοκλήρωση του ψηφιακού check-in.
+                    <div
+                      style="
+                        margin-top:14px;
+                        font-size:13px;
+                        color:#766858;
+                      "
+                    >
+                      Κωδικός
+                    </div>
+
+                    <div
+                      style="
+                        margin-top:4px;
+                        font-size:18px;
+                        font-weight:bold;
+                        letter-spacing:0.03em;
+                      "
+                    >
+                      ${WIFI_PASSWORD}
+                    </div>
                   </td>
                 </tr>
               </table>
 
+              <!-- CONTACT -->
               <table
                 role="presentation"
                 width="100%"
@@ -877,8 +959,24 @@ function buildEmailHtml(
               >
                 <tr>
                   <td
+                    colspan="2"
                     style="
-                      padding:18px 20px;
+                      padding:18px 20px 4px;
+                      font-size:14px;
+                      line-height:1.7;
+                    "
+                  >
+                    Για οποιαδήποτε απορία, είτε πριν από
+                    την άφιξή σας είτε κατά τη διάρκεια της
+                    διαμονής σας, μπορείτε να επικοινωνήσετε
+                    μαζί μας <strong>οποιαδήποτε ώρα</strong>.
+                  </td>
+                </tr>
+
+                <tr>
+                  <td
+                    style="
+                      padding:14px 20px 18px;
                       font-size:14px;
                       line-height:1.7;
                     "
@@ -894,7 +992,7 @@ function buildEmailHtml(
 
                   <td
                     style="
-                      padding:18px 20px;
+                      padding:14px 20px 18px;
                       font-size:14px;
                       line-height:1.7;
                     "
@@ -1113,18 +1211,55 @@ function buildEmailHtml(
                         </td>
                       </tr>
                     </table>
+                  </td>
+                </tr>
+              </table>
 
-                    <div
+              <!-- ARRIVAL EN -->
+              <table
+                role="presentation"
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
+                style="
+                  width:100%;
+                  background:#fff8ed;
+                  border:1px solid #ead9bf;
+                  border-radius:12px;
+                  margin:0 0 24px;
+                "
+              >
+                <tr>
+                  <td
+                    style="
+                      padding:22px 20px;
+                      font-size:14px;
+                      line-height:1.7;
+                    "
+                  >
+                    <strong
                       style="
-                        margin-top:14px;
-                        color:#887d70;
-                        font-size:11px;
-                        line-height:1.5;
+                        display:block;
+                        font-family:Georgia,'Times New Roman',serif;
+                        font-size:20px;
+                        color:#7a592e;
+                        margin-bottom:10px;
                       "
                     >
-                      This link is personal and
-                      applies only to this booking.
-                    </div>
+                      Arrival & welcome
+                    </strong>
+
+                    Please contact us approximately
+                    <strong>1 hour before your arrival</strong>
+                    so we can arrange the handover of the
+                    key to the building's main entrance and
+                    give you a brief introduction to MM Home.
+
+                    <br><br>
+
+                    The <strong>remaining balance for your stay</strong>
+                    will be settled upon arrival.
                   </td>
                 </tr>
               </table>
@@ -1175,15 +1310,106 @@ function buildEmailHtml(
                 </tr>
               </table>
 
-              <p
+              <!-- WIFI EN -->
+              <table
+                role="presentation"
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
                 style="
-                  font-size:14px;
-                  line-height:1.7;
+                  width:100%;
+                  background:#f7f3ec;
+                  border-radius:12px;
+                  margin:0 0 26px;
                 "
               >
-                Street parking is available and
-                is usually easy to find.
-              </p>
+                <tr>
+                  <td
+                    align="center"
+                    style="
+                      padding:24px 20px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-family:Georgia,'Times New Roman',serif;
+                        font-size:22px;
+                        font-weight:bold;
+                        color:#7a592e;
+                        margin-bottom:6px;
+                      "
+                    >
+                      Wi-Fi
+                    </div>
+
+                    <div
+                      style="
+                        font-size:14px;
+                        color:#766858;
+                        margin-bottom:18px;
+                      "
+                    >
+                      Scan the QR code to connect.
+                    </div>
+
+                    <img
+                      src="${WIFI_QR_URL}"
+                      alt="MM Home Wi-Fi QR"
+                      width="220"
+                      style="
+                        display:block;
+                        width:220px;
+                        height:220px;
+                        max-width:100%;
+                        margin:0 auto;
+                        border:10px solid #ffffff;
+                        border-radius:12px;
+                      "
+                    >
+
+                    <div
+                      style="
+                        margin-top:18px;
+                        font-size:13px;
+                        color:#766858;
+                      "
+                    >
+                      Network
+                    </div>
+
+                    <div
+                      style="
+                        margin-top:3px;
+                        font-size:17px;
+                        font-weight:bold;
+                      "
+                    >
+                      ${WIFI_NAME}
+                    </div>
+
+                    <div
+                      style="
+                        margin-top:14px;
+                        font-size:13px;
+                        color:#766858;
+                      "
+                    >
+                      Password
+                    </div>
+
+                    <div
+                      style="
+                        margin-top:4px;
+                        font-size:18px;
+                        font-weight:bold;
+                      "
+                    >
+                      ${WIFI_PASSWORD}
+                    </div>
+                  </td>
+                </tr>
+              </table>
 
               <p
                 style="
@@ -1191,20 +1417,9 @@ function buildEmailHtml(
                   line-height:1.7;
                 "
               >
-                If you know your approximate arrival
-                time, you may let us know so that
-                we can be available if you need
-                any assistance.
-              </p>
-
-              <p
-                style="
-                  font-size:14px;
-                  line-height:1.7;
-                "
-              >
-                Your personal access code is shown
-                only after completing digital check-in.
+                If you have any questions, either before
+                your arrival or during your stay, you can
+                contact us <strong>at any time</strong>.
               </p>
 
             </td>
@@ -1264,6 +1479,8 @@ function buildEmailHtml(
                 Ασκληπιού 44, Τρίκαλα
                 ·
                 +30 698 468 4411
+                ·
+                info@mmhome.gr
               </div>
             </td>
           </tr>
@@ -1282,12 +1499,6 @@ export async function sendPreArrivalEmail(
   booking:
     BookingRow
 ) {
-  /*
-   * Safety:
-   * never send a digital check-in
-   * email without both a door code
-   * and a unique token.
-   */
   if (
     !booking.access_code ||
     !booking.checkin_token
@@ -1397,17 +1608,6 @@ export async function runPreArrivalEmails() {
   const db =
     getDB();
 
-  /*
-   * Normally the email goes
-   * 2 days before arrival.
-   *
-   * If the access code was not
-   * ready at that time, the booking
-   * remains eligible on the next
-   * daily run until arrival day.
-   *
-   * claim() prevents duplicates.
-   */
   const result =
     await db
       .prepare(`
