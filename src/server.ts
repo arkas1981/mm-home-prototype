@@ -14,6 +14,7 @@ import {
 
 type WorkerEnv = {
   DB?: unknown;
+  CRON_SECRET?: string;
 };
 
 export const cloudflareRequestEnv =
@@ -122,13 +123,75 @@ function isH3SwallowedErrorBody(
       };
 
     return (
-      payload.unhandled ===
-        true &&
+      payload.unhandled === true &&
       payload.message ===
         "HTTPError"
     );
   } catch {
     return false;
+  }
+}
+
+async function runEmailCron(
+  request: Request,
+  env: WorkerEnv
+) {
+  const auth =
+    request.headers.get(
+      "authorization"
+    );
+
+  if (
+    !env.CRON_SECRET ||
+    auth !==
+      `Bearer ${env.CRON_SECRET}`
+  ) {
+    return new Response(
+      "Unauthorized",
+      {
+        status: 401,
+      }
+    );
+  }
+
+  console.log(
+    "MM Home HTTP email cron started"
+  );
+
+  try {
+    const {
+      runEmailFailSafe,
+    } =
+      await import(
+        "./lib/email-failsafe.server"
+      );
+
+    await runEmailFailSafe();
+
+    console.log(
+      "MM Home HTTP email cron completed"
+    );
+
+    return new Response(
+      "OK",
+      {
+        status: 200,
+      }
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "MM Home HTTP email cron failed:",
+      error
+    );
+
+    return new Response(
+      "FAILED",
+      {
+        status: 500,
+      }
+    );
   }
 }
 
@@ -142,6 +205,21 @@ export default {
       env as WorkerEnv,
       async () => {
         try {
+          const url =
+            new URL(
+              request.url
+            );
+
+          if (
+            url.pathname ===
+              "/internal/email-cron"
+          ) {
+            return await runEmailCron(
+              request,
+              env as WorkerEnv
+            );
+          }
+
           const handler =
             await getServerEntry();
 
@@ -176,49 +254,5 @@ export default {
         }
       }
     );
-  },
-
-  async scheduled(
-    controller: {
-      cron?: string;
-      scheduledTime?: number;
-    },
-    env: unknown,
-    _ctx: unknown
-  ) {
-    console.log(
-      "MM Home cron started:",
-      controller.cron ??
-        "unknown"
-    );
-
-    try {
-      await cloudflareRequestEnv.run(
-        env as WorkerEnv,
-        async () => {
-          const {
-            runEmailFailSafe,
-          } =
-            await import(
-              "./lib/email-failsafe.server"
-            );
-
-          await runEmailFailSafe();
-        }
-      );
-
-      console.log(
-        "MM Home cron completed successfully"
-      );
-    } catch (
-      error
-    ) {
-      console.error(
-        "MM Home cron failed:",
-        error
-      );
-
-      throw error;
-    }
   },
 };
