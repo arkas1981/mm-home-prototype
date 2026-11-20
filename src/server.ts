@@ -58,8 +58,11 @@ async function getServerEntry():
 
 async function normalizeCatastrophicSsrResponse(
   response: Response
-): Promise<Response> {
-  if (response.status < 500) {
+):
+  Promise<Response> {
+  if (
+    response.status < 500
+  ) {
     return response;
   }
 
@@ -131,16 +134,6 @@ function isH3SwallowedErrorBody(
   }
 }
 
-/*
- * TEMPORARY CRON DIAGNOSTIC
- *
- * Does NOT expose the secret.
- * It only tells us:
- * - whether the main Worker sees CRON_SECRET
- * - whether the request contains the custom header
- * - whether their lengths match
- * - whether the values match
- */
 async function runEmailCron(
   request: Request
 ) {
@@ -152,47 +145,77 @@ async function runEmailCron(
       "x-mmhome-cron-secret"
     );
 
-  return new Response(
-    JSON.stringify(
+  if (
+    !cfEnv.CRON_SECRET
+  ) {
+    console.error(
+      "CRON_SECRET missing in mm-home-prototype"
+    );
+
+    return new Response(
+      "CRON_SECRET_MISSING",
       {
-        secretExists:
-          Boolean(
-            cfEnv.CRON_SECRET
-          ),
+        status: 500,
+      }
+    );
+  }
 
-        secretLength:
-          cfEnv.CRON_SECRET
-            ?.length ?? 0,
+  if (
+    !incomingSecret ||
+    incomingSecret !==
+      cfEnv.CRON_SECRET
+  ) {
+    console.error(
+      "CRON_SECRET mismatch"
+    );
 
-        headerExists:
-          Boolean(
-            incomingSecret
-          ),
+    return new Response(
+      "CRON_SECRET_MISMATCH",
+      {
+        status: 401,
+      }
+    );
+  }
 
-        headerLength:
-          incomingSecret
-            ?.length ?? 0,
-
-        matches:
-          Boolean(
-            incomingSecret &&
-            cfEnv.CRON_SECRET &&
-            incomingSecret ===
-              cfEnv.CRON_SECRET
-          ),
-      },
-      null,
-      2
-    ),
-    {
-      status: 200,
-
-      headers: {
-        "content-type":
-          "application/json; charset=utf-8",
-      },
-    }
+  console.log(
+    "MM Home HTTP email cron started"
   );
+
+  try {
+    const {
+      runEmailFailSafe,
+    } =
+      await import(
+        "./lib/email-failsafe.server"
+      );
+
+    await runEmailFailSafe();
+
+    console.log(
+      "MM Home HTTP email cron completed"
+    );
+
+    return new Response(
+      "OK",
+      {
+        status: 200,
+      }
+    );
+  } catch (
+    error
+  ) {
+    console.error(
+      "MM Home HTTP email cron failed:",
+      error
+    );
+
+    return new Response(
+      "FAILED",
+      {
+        status: 500,
+      }
+    );
+  }
 }
 
 export default {
