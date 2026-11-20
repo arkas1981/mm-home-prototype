@@ -5,10 +5,6 @@ import {
 } from "node:async_hooks";
 
 import {
-  env as cloudflareEnv,
-} from "cloudflare:workers";
-
-import {
   consumeLastCapturedError,
 } from "./lib/error-capture";
 
@@ -18,7 +14,6 @@ import {
 
 type WorkerEnv = {
   DB?: unknown;
-  CRON_SECRET?: string;
 };
 
 export const cloudflareRequestEnv =
@@ -58,11 +53,8 @@ async function getServerEntry():
 
 async function normalizeCatastrophicSsrResponse(
   response: Response
-):
-  Promise<Response> {
-  if (
-    response.status < 500
-  ) {
+): Promise<Response> {
+  if (response.status < 500) {
     return response;
   }
 
@@ -134,51 +126,9 @@ function isH3SwallowedErrorBody(
   }
 }
 
-async function runEmailCron(
-  request: Request
-) {
-  const cfEnv =
-    cloudflareEnv as unknown as WorkerEnv;
-
-  const incomingSecret =
-    request.headers.get(
-      "x-mmhome-cron-secret"
-    );
-
-  if (
-    !cfEnv.CRON_SECRET
-  ) {
-    console.error(
-      "CRON_SECRET missing in mm-home-prototype"
-    );
-
-    return new Response(
-      "CRON_SECRET_MISSING",
-      {
-        status: 500,
-      }
-    );
-  }
-
-  if (
-    !incomingSecret ||
-    incomingSecret !==
-      cfEnv.CRON_SECRET
-  ) {
-    console.error(
-      "CRON_SECRET mismatch"
-    );
-
-    return new Response(
-      "CRON_SECRET_MISMATCH",
-      {
-        status: 401,
-      }
-    );
-  }
-
+async function runEmailCron() {
   console.log(
-    "MM Home HTTP email cron started"
+    "MM Home email cron started"
   );
 
   try {
@@ -192,7 +142,7 @@ async function runEmailCron(
     await runEmailFailSafe();
 
     console.log(
-      "MM Home HTTP email cron completed"
+      "MM Home email cron completed"
     );
 
     return new Response(
@@ -201,11 +151,9 @@ async function runEmailCron(
         status: 200,
       }
     );
-  } catch (
-    error
-  ) {
+  } catch (error) {
     console.error(
-      "MM Home HTTP email cron failed:",
+      "MM Home email cron failed:",
       error
     );
 
@@ -237,9 +185,7 @@ export default {
             url.pathname ===
               "/internal/email-cron"
           ) {
-            return await runEmailCron(
-              request
-            );
+            return await runEmailCron();
           }
 
           const handler =
@@ -255,9 +201,7 @@ export default {
           return await normalizeCatastrophicSsrResponse(
             response
           );
-        } catch (
-          error
-        ) {
+        } catch (error) {
           console.error(
             error
           );
