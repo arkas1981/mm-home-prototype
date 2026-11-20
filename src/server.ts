@@ -40,9 +40,7 @@ let serverEntryPromise:
 
 async function getServerEntry():
   Promise<ServerEntry> {
-  if (
-    !serverEntryPromise
-  ) {
+  if (!serverEntryPromise) {
     serverEntryPromise =
       import(
         "@tanstack/react-start/server-entry"
@@ -60,11 +58,8 @@ async function getServerEntry():
 
 async function normalizeCatastrophicSsrResponse(
   response: Response
-):
-  Promise<Response> {
-  if (
-    response.status < 500
-  ) {
+): Promise<Response> {
+  if (response.status < 500) {
     return response;
   }
 
@@ -105,7 +100,6 @@ async function normalizeCatastrophicSsrResponse(
     renderErrorPage(),
     {
       status: 500,
-
       headers: {
         "content-type":
           "text/html; charset=utf-8",
@@ -139,21 +133,38 @@ function isH3SwallowedErrorBody(
 async function runEmailCron(
   request: Request
 ) {
-  const env =
+  const cfEnv =
     cloudflareEnv as unknown as WorkerEnv;
 
-  const auth =
+  const incomingSecret =
     request.headers.get(
-      "authorization"
+      "x-mmhome-cron-secret"
     );
 
-  if (
-    !env.CRON_SECRET ||
-    auth !==
-      `Bearer ${env.CRON_SECRET}`
-  ) {
+  if (!cfEnv.CRON_SECRET) {
+    console.error(
+      "CRON_SECRET missing in mm-home-prototype"
+    );
+
     return new Response(
-      "Unauthorized",
+      "CRON_SECRET_MISSING",
+      {
+        status: 500,
+      }
+    );
+  }
+
+  if (
+    !incomingSecret ||
+    incomingSecret !==
+      cfEnv.CRON_SECRET
+  ) {
+    console.error(
+      "CRON_SECRET mismatch"
+    );
+
+    return new Response(
+      "CRON_SECRET_MISMATCH",
       {
         status: 401,
       }
@@ -184,9 +195,7 @@ async function runEmailCron(
         status: 200,
       }
     );
-  } catch (
-    error
-  ) {
+  } catch (error) {
     console.error(
       "MM Home HTTP email cron failed:",
       error
@@ -238,9 +247,7 @@ export default {
           return await normalizeCatastrophicSsrResponse(
             response
           );
-        } catch (
-          error
-        ) {
+        } catch (error) {
           console.error(
             error
           );
@@ -249,7 +256,6 @@ export default {
             renderErrorPage(),
             {
               status: 500,
-
               headers: {
                 "content-type":
                   "text/html; charset=utf-8",
