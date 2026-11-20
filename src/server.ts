@@ -12,8 +12,12 @@ import {
   renderErrorPage,
 } from "./lib/error-page";
 
+import {
+  getDB,
+} from "./lib/d1.server";
+
 type WorkerEnv = {
-  DB?: D1Database;
+  DB?: unknown;
 };
 
 type TestBookingRow = {
@@ -24,9 +28,11 @@ type TestBookingRow = {
   guests: number;
   name: string;
   email: string;
+
   access_code:
     | string
     | null;
+
   checkin_token:
     | string
     | null;
@@ -74,7 +80,8 @@ async function normalizeCatastrophicSsrResponse(
 ):
   Promise<Response> {
   if (
-    response.status < 500
+    response.status <
+    500
   ) {
     return response;
   }
@@ -115,7 +122,8 @@ async function normalizeCatastrophicSsrResponse(
   return new Response(
     renderErrorPage(),
     {
-      status: 500,
+      status:
+        500,
 
       headers: {
         "content-type":
@@ -133,12 +141,16 @@ function isH3SwallowedErrorBody(
       JSON.parse(
         body
       ) as {
-        unhandled?: unknown;
-        message?: unknown;
+        unhandled?:
+          unknown;
+
+        message?:
+          unknown;
       };
 
     return (
-      payload.unhandled === true &&
+      payload.unhandled ===
+        true &&
       payload.message ===
         "HTTPError"
     );
@@ -147,21 +159,9 @@ function isH3SwallowedErrorBody(
   }
 }
 
-async function testPreArrivalEmail(
-  env:
-    WorkerEnv
-) {
+async function testPreArrivalEmail() {
   const db =
-    env.DB;
-
-  if (!db) {
-    return new Response(
-      "DB unavailable",
-      {
-        status: 500,
-      }
-    );
-  }
+    getDB();
 
   const booking =
     await db
@@ -177,18 +177,22 @@ async function testPreArrivalEmail(
           access_code,
           checkin_token
         FROM bookings
-        WHERE code = 'MM-NWDKTZ'
+        WHERE
+          code = 'MM-NWDKTZ'
         LIMIT 1
       `)
       .first<
         TestBookingRow
       >();
 
-  if (!booking) {
+  if (
+    !booking
+  ) {
     return new Response(
       "Booking not found",
       {
-        status: 404,
+        status:
+          404,
       }
     );
   }
@@ -213,13 +217,9 @@ async function testPreArrivalEmail(
           string;
       }>();
 
-  /*
-   * Temporarily remove the
-   * notification lock so that
-   * the normal pre-arrival sender
-   * can be used for the test.
-   */
-  if (existing) {
+  if (
+    existing
+  ) {
     await db
       .prepare(`
         DELETE FROM booking_notifications
@@ -242,10 +242,6 @@ async function testPreArrivalEmail(
         "./lib/prearrival-email.server"
       );
 
-    /*
-     * Send the real template,
-     * but ONLY to MM Home.
-     */
     await sendPreArrivalEmail({
       ...booking,
 
@@ -253,9 +249,6 @@ async function testPreArrivalEmail(
         "info@mmhome.gr",
     });
 
-    /*
-     * Remove the test claim.
-     */
     await db
       .prepare(`
         DELETE FROM booking_notifications
@@ -269,12 +262,9 @@ async function testPreArrivalEmail(
       )
       .run();
 
-    /*
-     * Restore previous state
-     * if this booking had already
-     * been marked as sent.
-     */
-    if (existing) {
+    if (
+      existing
+    ) {
       await db
         .prepare(`
           INSERT OR IGNORE
@@ -296,15 +286,13 @@ async function testPreArrivalEmail(
     return new Response(
       "TEST EMAIL SENT TO info@mmhome.gr",
       {
-        status: 200,
+        status:
+          200,
       }
     );
   } catch (
     error
   ) {
-    /*
-     * Clean test claim.
-     */
     await db
       .prepare(`
         DELETE FROM booking_notifications
@@ -318,7 +306,9 @@ async function testPreArrivalEmail(
       )
       .run();
 
-    if (existing) {
+    if (
+      existing
+    ) {
       await db
         .prepare(`
           INSERT OR IGNORE
@@ -345,7 +335,8 @@ async function testPreArrivalEmail(
     return new Response(
       "TEST EMAIL FAILED",
       {
-        status: 500,
+        status:
+          500,
       }
     );
   }
@@ -367,17 +358,13 @@ export default {
             );
 
           /*
-           * TEMPORARY TEST URL.
-           * Sends only to:
-           * info@mmhome.gr
+           * TEMPORARY TEST URL
            */
           if (
             url.pathname ===
               "/__mmhome-test-prearrival-7x4k9"
           ) {
-            return await testPreArrivalEmail(
-              env as WorkerEnv
-            );
+            return await testPreArrivalEmail();
           }
 
           const handler =
@@ -403,7 +390,8 @@ export default {
           return new Response(
             renderErrorPage(),
             {
-              status: 500,
+              status:
+                500,
 
               headers: {
                 "content-type":
