@@ -5,6 +5,10 @@ import {
 } from "node:async_hooks";
 
 import {
+  env as cloudflareEnv,
+} from "cloudflare:workers";
+
+import {
   consumeLastCapturedError,
 } from "./lib/error-capture";
 
@@ -133,9 +137,11 @@ function isH3SwallowedErrorBody(
 }
 
 async function runEmailCron(
-  request: Request,
-  env: WorkerEnv
+  request: Request
 ) {
+  const env =
+    cloudflareEnv as unknown as WorkerEnv;
+
   const auth =
     request.headers.get(
       "authorization"
@@ -215,8 +221,7 @@ export default {
               "/internal/email-cron"
           ) {
             return await runEmailCron(
-              request,
-              env as WorkerEnv
+              request
             );
           }
 
