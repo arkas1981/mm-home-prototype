@@ -58,8 +58,7 @@ async function normalizeCatastrophicSsrResponse(
 ):
   Promise<Response> {
   if (
-    response.status <
-    500
+    response.status < 500
   ) {
     return response;
   }
@@ -100,8 +99,7 @@ async function normalizeCatastrophicSsrResponse(
   return new Response(
     renderErrorPage(),
     {
-      status:
-        500,
+      status: 500,
 
       headers: {
         "content-type":
@@ -167,8 +165,7 @@ export default {
           return new Response(
             renderErrorPage(),
             {
-              status:
-                500,
+              status: 500,
 
               headers: {
                 "content-type":
@@ -182,18 +179,21 @@ export default {
   },
 
   async scheduled(
-    _controller: unknown,
+    controller: {
+      cron?: string;
+      scheduledTime?: number;
+    },
     env: unknown,
-    ctx: {
-      waitUntil:
-        (
-          promise:
-            Promise<unknown>
-        ) => void;
-    }
+    _ctx: unknown
   ) {
-    ctx.waitUntil(
-      cloudflareRequestEnv.run(
+    console.log(
+      "MM Home cron started:",
+      controller.cron ??
+        "unknown"
+    );
+
+    try {
+      await cloudflareRequestEnv.run(
         env as WorkerEnv,
         async () => {
           const {
@@ -205,7 +205,20 @@ export default {
 
           await runEmailFailSafe();
         }
-      )
-    );
+      );
+
+      console.log(
+        "MM Home cron completed successfully"
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        "MM Home cron failed:",
+        error
+      );
+
+      throw error;
+    }
   },
 };
