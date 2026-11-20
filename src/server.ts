@@ -12,30 +12,8 @@ import {
   renderErrorPage,
 } from "./lib/error-page";
 
-import {
-  getDB,
-} from "./lib/d1.server";
-
 type WorkerEnv = {
   DB?: unknown;
-};
-
-type TestBookingRow = {
-  id: string;
-  code: string;
-  check_in: string;
-  check_out: string;
-  guests: number;
-  name: string;
-  email: string;
-
-  access_code:
-    | string
-    | null;
-
-  checkin_token:
-    | string
-    | null;
 };
 
 export const cloudflareRequestEnv =
@@ -141,11 +119,8 @@ function isH3SwallowedErrorBody(
       JSON.parse(
         body
       ) as {
-        unhandled?:
-          unknown;
-
-        message?:
-          unknown;
+        unhandled?: unknown;
+        message?: unknown;
       };
 
     return (
@@ -159,189 +134,6 @@ function isH3SwallowedErrorBody(
   }
 }
 
-async function testPreArrivalEmail() {
-  const db =
-    getDB();
-
-  const booking =
-    await db
-      .prepare(`
-        SELECT
-          id,
-          code,
-          check_in,
-          check_out,
-          guests,
-          name,
-          email,
-          access_code,
-          checkin_token
-        FROM bookings
-        WHERE
-          code = 'MM-NWDKTZ'
-        LIMIT 1
-      `)
-      .first<
-        TestBookingRow
-      >();
-
-  if (
-    !booking
-  ) {
-    return new Response(
-      "Booking not found",
-      {
-        status:
-          404,
-      }
-    );
-  }
-
-  const existing =
-    await db
-      .prepare(`
-        SELECT
-          booking_id
-        FROM booking_notifications
-        WHERE
-          booking_id = ?
-          AND kind =
-            'guest_prearrival_2d'
-        LIMIT 1
-      `)
-      .bind(
-        booking.id
-      )
-      .first<{
-        booking_id:
-          string;
-      }>();
-
-  if (
-    existing
-  ) {
-    await db
-      .prepare(`
-        DELETE FROM booking_notifications
-        WHERE
-          booking_id = ?
-          AND kind =
-            'guest_prearrival_2d'
-      `)
-      .bind(
-        booking.id
-      )
-      .run();
-  }
-
-  try {
-    const {
-      sendPreArrivalEmail,
-    } =
-      await import(
-        "./lib/prearrival-email.server"
-      );
-
-    await sendPreArrivalEmail({
-      ...booking,
-
-      email:
-        "info@mmhome.gr",
-    });
-
-    await db
-      .prepare(`
-        DELETE FROM booking_notifications
-        WHERE
-          booking_id = ?
-          AND kind =
-            'guest_prearrival_2d'
-      `)
-      .bind(
-        booking.id
-      )
-      .run();
-
-    if (
-      existing
-    ) {
-      await db
-        .prepare(`
-          INSERT OR IGNORE
-          INTO booking_notifications (
-            booking_id,
-            kind
-          )
-          VALUES (
-            ?,
-            'guest_prearrival_2d'
-          )
-        `)
-        .bind(
-          booking.id
-        )
-        .run();
-    }
-
-    return new Response(
-      "TEST EMAIL SENT TO info@mmhome.gr",
-      {
-        status:
-          200,
-      }
-    );
-  } catch (
-    error
-  ) {
-    await db
-      .prepare(`
-        DELETE FROM booking_notifications
-        WHERE
-          booking_id = ?
-          AND kind =
-            'guest_prearrival_2d'
-      `)
-      .bind(
-        booking.id
-      )
-      .run();
-
-    if (
-      existing
-    ) {
-      await db
-        .prepare(`
-          INSERT OR IGNORE
-          INTO booking_notifications (
-            booking_id,
-            kind
-          )
-          VALUES (
-            ?,
-            'guest_prearrival_2d'
-          )
-        `)
-        .bind(
-          booking.id
-        )
-        .run();
-    }
-
-    console.error(
-      "Pre-arrival test failed:",
-      error
-    );
-
-    return new Response(
-      "TEST EMAIL FAILED",
-      {
-        status:
-          500,
-      }
-    );
-  }
-}
-
 export default {
   async fetch(
     request: Request,
@@ -352,21 +144,6 @@ export default {
       env as WorkerEnv,
       async () => {
         try {
-          const url =
-            new URL(
-              request.url
-            );
-
-          /*
-           * TEMPORARY TEST URL
-           */
-          if (
-            url.pathname ===
-              "/__mmhome-test-prearrival-7x4k9"
-          ) {
-            return await testPreArrivalEmail();
-          }
-
           const handler =
             await getServerEntry();
 
