@@ -54,6 +54,10 @@ type R2BucketLike = {
 
 type CloudflareEnv = {
   REVIEW_PHOTOS?: R2BucketLike;
+
+  RESEND_API_KEY?: string;
+
+  REVIEW_NOTIFICATION_EMAIL?: string;
 };
 
 export type PublicReview = {
@@ -299,6 +303,414 @@ function validPhotos(
       );
     }
   );
+}
+
+function escapeHtml(
+  value: string
+) {
+  return value
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+}
+
+function reviewNotificationEnv() {
+  return env as unknown as
+    CloudflareEnv;
+}
+
+async function sendReviewNotification(
+  data: {
+    bookingCode: string;
+    guestName: string;
+    displayName: string;
+    rating: number;
+    text: string;
+    photoCount: number;
+  }
+) {
+  const environment =
+    reviewNotificationEnv();
+
+  const apiKey =
+    environment
+      .RESEND_API_KEY;
+
+  const recipient =
+    environment
+      .REVIEW_NOTIFICATION_EMAIL
+      ?.trim();
+
+  if (
+    !apiKey ||
+    !apiKey.startsWith(
+      "re_"
+    )
+  ) {
+    console.warn(
+      "Review notification skipped: RESEND_API_KEY missing or invalid."
+    );
+
+    return;
+  }
+
+  if (
+    !recipient
+  ) {
+    console.warn(
+      "Review notification skipped: REVIEW_NOTIFICATION_EMAIL missing."
+    );
+
+    return;
+  }
+
+  const bookingCode =
+    escapeHtml(
+      data.bookingCode
+    );
+
+  const guestName =
+    escapeHtml(
+      data.guestName
+    );
+
+  const displayName =
+    escapeHtml(
+      data.displayName
+    );
+
+  const reviewText =
+    escapeHtml(
+      data.text
+    );
+
+  const stars =
+    "★".repeat(
+      data.rating
+    ) +
+    "☆".repeat(
+      5 -
+        data.rating
+    );
+
+  const photoText =
+    data.photoCount ===
+    0
+      ? "Δεν ανέβασε φωτογραφίες."
+      : data.photoCount ===
+          1
+      ? "Ανέβασε 1 φωτογραφία."
+      : `Ανέβασε ${data.photoCount} φωτογραφίες.`;
+
+  const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+</head>
+
+<body
+  style="
+    margin:0;
+    padding:0;
+    background:#f6f3ee;
+    font-family:Arial,Helvetica,sans-serif;
+    color:#2f2a25;
+  "
+>
+  <table
+    role="presentation"
+    width="100%"
+    cellpadding="0"
+    cellspacing="0"
+    border="0"
+    style="
+      background:#f6f3ee;
+      padding:24px 10px;
+    "
+  >
+    <tr>
+      <td align="center">
+
+        <table
+          role="presentation"
+          width="600"
+          cellpadding="0"
+          cellspacing="0"
+          border="0"
+          style="
+            width:100%;
+            max-width:600px;
+            background:#ffffff;
+            border:1px solid #e9e1d6;
+            border-radius:14px;
+            overflow:hidden;
+          "
+        >
+
+          <tr>
+            <td
+              style="
+                padding:28px;
+              "
+            >
+
+              <div
+                style="
+                  font-family:Georgia,'Times New Roman',serif;
+                  font-size:26px;
+                  font-weight:bold;
+                  color:#7a592e;
+                  text-align:center;
+                "
+              >
+                Νέα αξιολόγηση MM Home
+              </div>
+
+              <div
+                style="
+                  margin-top:24px;
+                  padding:18px 20px;
+                  background:#f7f3ec;
+                  border-radius:10px;
+                "
+              >
+
+                <div
+                  style="
+                    font-size:14px;
+                    color:#766858;
+                  "
+                >
+                  Επισκέπτης
+                </div>
+
+                <div
+                  style="
+                    margin-top:4px;
+                    font-size:17px;
+                    font-weight:bold;
+                  "
+                >
+                  ${guestName}
+                </div>
+
+                <div
+                  style="
+                    margin-top:14px;
+                    font-size:14px;
+                    color:#766858;
+                  "
+                >
+                  Δημόσια εμφάνιση
+                </div>
+
+                <div
+                  style="
+                    margin-top:4px;
+                    font-size:15px;
+                  "
+                >
+                  ${displayName}
+                </div>
+
+                <div
+                  style="
+                    margin-top:14px;
+                    font-size:14px;
+                    color:#766858;
+                  "
+                >
+                  Κράτηση
+                </div>
+
+                <div
+                  style="
+                    margin-top:4px;
+                    font-size:15px;
+                    font-weight:bold;
+                  "
+                >
+                  ${bookingCode}
+                </div>
+
+              </div>
+
+              <div
+                style="
+                  margin-top:24px;
+                  text-align:center;
+                  font-size:27px;
+                  letter-spacing:3px;
+                  color:#8a642f;
+                "
+              >
+                ${stars}
+              </div>
+
+              <div
+                style="
+                  margin-top:20px;
+                  padding:20px;
+                  border:1px solid #e9e1d6;
+                  border-radius:10px;
+                  font-size:15px;
+                  line-height:1.7;
+                  white-space:pre-wrap;
+                "
+              >
+                ${reviewText}
+              </div>
+
+              <div
+                style="
+                  margin-top:16px;
+                  font-size:13px;
+                  color:#766858;
+                  text-align:center;
+                "
+              >
+                ${photoText}
+              </div>
+
+              <table
+                role="presentation"
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
+                style="
+                  margin-top:26px;
+                "
+              >
+                <tr>
+                  <td
+                    align="center"
+                  >
+                    <table
+                      role="presentation"
+                      cellpadding="0"
+                      cellspacing="0"
+                      border="0"
+                    >
+                      <tr>
+                        <td
+                          bgcolor="#365f51"
+                          style="
+                            border-radius:8px;
+                          "
+                        >
+                          <a
+                            href="https://mmhome.gr/admin"
+                            target="_blank"
+                            style="
+                              display:inline-block;
+                              padding:14px 26px;
+                              color:#ffffff;
+                              text-decoration:none;
+                              font-size:15px;
+                              font-weight:bold;
+                            "
+                          >
+                            Προβολή στο Admin
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p
+                style="
+                  margin:24px 0 0;
+                  text-align:center;
+                  font-size:12px;
+                  color:#8b837b;
+                "
+              >
+                Η αξιολόγηση παραμένει σε αναμονή
+                μέχρι να την εγκρίνετε από το Admin.
+              </p>
+
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  const response =
+    await fetch(
+      "https://api.resend.com/emails",
+      {
+        method:
+          "POST",
+
+        headers: {
+          Authorization:
+            `Bearer ${apiKey}`,
+
+          "Content-Type":
+            "application/json",
+        },
+
+        body:
+          JSON.stringify({
+            from:
+              "MM Home <info@mmhome.gr>",
+
+            to: [
+              recipient,
+            ],
+
+            reply_to:
+              "info@mmhome.gr",
+
+            subject:
+              `⭐ Νέα αξιολόγηση MM Home — ${data.rating}/5 — ${data.bookingCode}`,
+
+            html,
+          }),
+      }
+    );
+
+  if (
+    !response.ok
+  ) {
+    const body =
+      await response.text();
+
+    throw new Error(
+      `Review notification email failed: ${body}`
+    );
+  }
 }
 
 export const getApprovedReviews =
@@ -707,7 +1119,8 @@ export const submitReview =
 
         const bucket =
           (
-            env as unknown as CloudflareEnv
+            env as unknown as
+              CloudflareEnv
           )
             .REVIEW_PHOTOS;
 
@@ -740,12 +1153,6 @@ export const submitReview =
           [];
 
         try {
-          /*
-           * Πρώτα δημιουργείται η βασική
-           * αξιολόγηση και μετά οι φωτογραφίες.
-           * Έτσι δεν παραβιάζεται το foreign key
-           * της review_photos.
-           */
           await db
             .prepare(`
               INSERT INTO reviews (
@@ -874,6 +1281,40 @@ export const submitReview =
                 )
                 .run();
             }
+          }
+
+          /*
+           * Η ειδοποίηση email είναι
+           * ανεξάρτητη από την αποθήκευση
+           * της αξιολόγησης.
+           *
+           * Αν αποτύχει, η αξιολόγηση
+           * παραμένει κανονικά στη βάση.
+           */
+          try {
+            await sendReviewNotification({
+              bookingCode:
+                code,
+
+              guestName:
+                fullName,
+
+              displayName,
+
+              rating,
+
+              text,
+
+              photoCount:
+                photos.length,
+            });
+          } catch (
+            error
+          ) {
+            console.error(
+              "Review notification email failed:",
+              error
+            );
           }
 
           return {
