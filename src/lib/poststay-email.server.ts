@@ -714,7 +714,7 @@ export async function sendPostStayEmail(
 export async function runPostStayEmails() {
   if (
     currentAthensHour() !==
-    14
+    11
   ) {
     return;
   }
