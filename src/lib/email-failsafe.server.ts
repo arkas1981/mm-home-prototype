@@ -241,12 +241,11 @@ async function runPreArrivalFailSafe() {
  *
  * Normal target:
  * checkout day from
- * 14:00 Athens time.
+ * 11:00 Athens time.
  *
  * Fail-safe:
- * if the 14:00 execution fails,
- * following hourly executions
- * retry it.
+ * if the 11:00 execution fails,
+ * following executions retry it.
  *
  * We also allow a 7-day catch-up
  * window in case Cloudflare or
@@ -267,7 +266,7 @@ async function runPostStayFailSafe() {
     currentAthensHour();
 
   const latestDueCheckout =
-    hour >= 14
+    hour >= 11
       ? today
       : addDays(
           today,
