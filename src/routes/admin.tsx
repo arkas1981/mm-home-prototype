@@ -85,10 +85,6 @@ import {
 } from "@/components/site";
 
 import {
-  SLOGAN,
-} from "@/lib/i18n";
-
-import {
   meta,
 } from "@/lib/meta";
 
@@ -130,7 +126,6 @@ const TABS = [
   "blocks",
   "reviews",
   "notifications",
-  "emails",
 ] as const;
 
 type Tab =
@@ -162,8 +157,6 @@ const TAB_LABELS:
     notifications:
       "Ειδοποιήσεις",
 
-    emails:
-      "Email",
   };
 
 const eur = (
@@ -558,11 +551,6 @@ function Admin() {
               {tab ===
                 "notifications" && (
                 <Notifications />
-              )}
-
-              {tab ===
-                "emails" && (
-                <Emails />
               )}
             </>
           )}
@@ -3328,228 +3316,6 @@ function Notifications() {
           }
         />
       </label>
-    </div>
-  );
-}
-
-function Emails() {
-  const s = {
-    ...useStore(),
-    ...useAdmin(),
-  };
-
-  const b =
-    s.bookings.find(
-      (
-        x
-      ) =>
-        x.status ===
-          "confirmed" &&
-        x.checkIn >=
-          todayISO()
-    ) ??
-    s.bookings[
-      0
-    ];
-
-  const [
-    which,
-    setWhich,
-  ] =
-    useState(
-      0
-    );
-
-  if (
-    !b
-  ) {
-    return (
-      <div className="panel p-5">
-        Δεν υπάρχουν ακόμη κρατήσεις για προεπισκόπηση email.
-      </div>
-    );
-  }
-
-  const list = [
-    {
-      t:
-        "Επιβεβαίωση προς επισκέπτη",
-
-      subj:
-        `Η κράτησή σας στο MM Home ${b.code} επιβεβαιώθηκε`,
-
-      body: [
-        `Αγαπητέ/ή ${b.name},`,
-
-        `Σας ευχαριστούμε που επιλέξατε το MM Home. Η διαμονή σας από ${fd(
-          b.checkIn
-        )} έως ${fd(
-          b.checkOut
-        )} για ${b.guests} επισκέπτες έχει επιβεβαιωθεί.`,
-
-        `Τιμή: ${
-          b.rate ===
-          "flexible"
-            ? "Ευέλικτη"
-            : "Μη επιστρέψιμη"
-        } · Σύνολο: ${eur(
-          b.total
-        )}.`,
-
-        "Προσωπικό check-in από τις 15:00. Αναχώρηση έως τις 11:00.",
-
-        `Κωδικός κράτησης: ${b.code}.`,
-      ],
-    },
-
-    {
-      t:
-        "Νέα κράτηση προς ιδιοκτήτη",
-
-      subj:
-        `Νέα κράτηση MM Home ${b.code}`,
-
-      body: [
-        `${b.name} · ${b.email} · ${b.phone}`,
-
-        `${fd(
-          b.checkIn
-        )} → ${fd(
-          b.checkOut
-        )} · ${b.guests} επισκέπτες`,
-
-        `Σύνολο ${eur(
-          b.total
-        )}`,
-      ],
-    },
-
-    {
-      t:
-        "Πριν την άφιξη",
-
-      subj:
-        "Η διαμονή σας στο MM Home πλησιάζει",
-
-      body: [
-        `Αγαπητέ/ή ${b.name},`,
-
-        `Σας περιμένουμε στις ${fd(
-          b.checkIn
-        )}. Το προσωπικό check-in είναι διαθέσιμο από τις 15:00.`,
-
-        `Για οτιδήποτε χρειαστείτε, επικοινωνήστε μαζί μας στο ${s.settings.phone} ή στο info@mmhome.gr.`,
-      ],
-    },
-
-    {
-      t:
-        "Μετά την αναχώρηση",
-
-      subj:
-        "Ευχαριστούμε που επιλέξατε το MM Home",
-
-      body: [
-        `Αγαπητέ/ή ${b.name},`,
-
-        "Ευχαριστούμε που επιλέξατε το MM Home!",
-
-        `Θα χαρούμε να μοιραστείτε την εμπειρία σας: https://mmhome.gr/review/${b.code}`,
-      ],
-    },
-  ];
-
-  const e =
-    list[
-      which
-    ];
-
-  if (
-    !e
-  ) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex gap-2 flex-wrap">
-        {list.map(
-          (
-            x,
-            i
-          ) => (
-            <button
-              key={
-                x.t
-              }
-              onClick={() =>
-                setWhich(
-                  i
-                )
-              }
-              className={`px-3 py-1.5 rounded-full text-xs border ${
-                i ===
-                which
-                  ? "bg-foreground text-background"
-                  : ""
-              }`}
-            >
-              {
-                x.t
-              }
-            </button>
-          )
-        )}
-      </div>
-
-      <div className="panel max-w-xl overflow-hidden">
-        <div className="bg-secondary p-6 text-center">
-          <Logo />
-
-          <p className="font-serif text-2xl mt-2">
-            MM Home
-          </p>
-
-          <p className="font-serif italic text-sm text-muted-foreground">
-            {
-              SLOGAN
-            }
-          </p>
-        </div>
-
-        <div className="p-6 text-sm space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Θέμα:{" "}
-            {
-              e.subj
-            }
-          </p>
-
-          {e.body.map(
-            (
-              p
-            ) => (
-              <p
-                key={
-                  p
-                }
-              >
-                {
-                  p
-                }
-              </p>
-            )
-          )}
-
-          <p className="pt-2">
-            — MM Home
-          </p>
-        </div>
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        Προεπισκόπηση μόνο — τα email δεν αποστέλλονται ακόμη.
-      </p>
     </div>
   );
 }
