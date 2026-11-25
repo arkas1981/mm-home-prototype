@@ -32,7 +32,7 @@ import {
 } from "@/lib/review.functions";
 
 const GOOGLE_MAPS_URL =
-  "https://maps.app.goo.gl/85HeJKGC35EqQGA57";
+  "https://www.google.com/search?q=M%26M+HOME+Trikala";
 
 export const Route =
   createFileRoute(
@@ -287,9 +287,9 @@ function Reviews() {
               "
             >
               {lang ===
-              "el"
-                ? "Δεν ήταν δυνατή η φόρτωση των αξιολογήσεων."
-                : "Reviews could not be loaded."}
+                "el"
+                  ? "Δεν ήταν δυνατή η φόρτωση των αξιολογήσεων."
+                  : "Reviews could not be loaded."}
             </p>
           )}
 
