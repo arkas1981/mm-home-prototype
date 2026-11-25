@@ -9,6 +9,7 @@ import {
 
 import {
   CheckCircle2,
+  ExternalLink,
   Star,
 } from "lucide-react";
 
@@ -29,6 +30,9 @@ import {
   getApprovedReviews,
   type PublicReview,
 } from "@/lib/review.functions";
+
+const GOOGLE_MAPS_URL =
+  "https://maps.app.goo.gl/85HeJKGC35EqQGA57";
 
 export const Route =
   createFileRoute(
@@ -217,11 +221,49 @@ function Reviews() {
               <p>
                 {lang ===
                 "el"
-                  ? "Κάθε αξιολόγηση μπορεί να υποβληθεί μόνο μετά την ολοκλήρωση επιβεβαιωμένης και εξοφλημένης κράτησης, μέσω του μοναδικού συνδέσμου της συγκεκριμένης κράτησης."
-                  : "Each review can only be submitted after a confirmed and paid stay has been completed, using the unique link associated with that booking."}
+                  ? "Οι παρακάτω αξιολογήσεις προέρχονται από επισκέπτες που ολοκλήρωσαν επιβεβαιωμένη και εξοφλημένη διαμονή στο MM Home."
+                  : "The reviews below come from guests who completed a confirmed and paid stay at MM Home."}
               </p>
             </div>
           </div>
+        </div>
+
+        <div
+          className="
+            flex
+            justify-center
+          "
+        >
+          <a
+            href={
+              GOOGLE_MAPS_URL
+            }
+            target="_blank"
+            rel="noreferrer"
+            className="
+              btn-gold
+              inline-flex
+              items-center
+              gap-2
+            "
+          >
+            <Star
+              size={
+                18
+              }
+            />
+
+            {lang ===
+            "el"
+              ? "Δείτε τις αξιολογήσεις μας στο Google"
+              : "See our reviews on Google"}
+
+            <ExternalLink
+              size={
+                16
+              }
+            />
+          </a>
         </div>
 
         {loading && (
