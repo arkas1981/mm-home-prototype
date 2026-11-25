@@ -32,7 +32,7 @@ import {
 } from "@/lib/review.functions";
 
 const GOOGLE_MAPS_URL =
-  "https://www.google.com/search?q=M%26M+HOME+Trikala";
+  "https://maps.app.goo.gl/85HeJKGC35EqQGA57";
 
 export const Route =
   createFileRoute(
@@ -255,8 +255,8 @@ function Reviews() {
 
             {lang ===
             "el"
-              ? "Δείτε τις αξιολογήσεις μας στο Google"
-              : "See our reviews on Google"}
+              ? "Δείτε το MM Home στο Google"
+              : "View MM Home on Google"}
 
             <ExternalLink
               size={
