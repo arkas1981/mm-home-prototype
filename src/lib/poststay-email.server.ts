@@ -15,14 +15,14 @@ type BookingRow = {
   email: string;
 };
 
-const SITE_URL =
-  "https://mmhome.gr";
-
 const HERO_IMAGE_URL =
   "https://mmhome.gr/prearrival-hero.png";
 
 const HERO_CONTENT_ID =
   "mmhome-poststay-hero";
+
+const GOOGLE_REVIEW_URL =
+  "https://g.page/r/CUBg-syIY_97ECE/review";
 
 function todayAthens() {
   const parts =
@@ -183,28 +183,12 @@ async function release(
     .run();
 }
 
-function reviewUrl(
-  code: string
-) {
-  return (
-    `${SITE_URL}/review/` +
-    encodeURIComponent(
-      code
-    )
-  );
-}
-
 function buildEmailHtml(
   booking: BookingRow
 ) {
   const name =
     escapeHtml(
       booking.name
-    );
-
-  const review =
-    reviewUrl(
-      booking.code
     );
 
   return `
@@ -261,7 +245,6 @@ function buildEmailHtml(
           "
         >
 
-          <!-- INLINE HERO -->
           <tr>
             <td style="padding:0;">
               <img
@@ -279,7 +262,6 @@ function buildEmailHtml(
             </td>
           </tr>
 
-          <!-- GREEK -->
           <tr>
             <td
               style="
@@ -371,15 +353,14 @@ function buildEmailHtml(
                         color:#5f574f;
                       "
                     >
-                      Η αξιολόγησή σας μας βοηθά να
-                      βελτιώνουμε συνεχώς την εμπειρία
-                      των επισκεπτών μας.
+                      Αν μείνατε ευχαριστημένοι από τη διαμονή σας,
+                      θα χαρούμε ιδιαίτερα αν μοιραστείτε
+                      την εμπειρία σας στο Google.
                     </div>
                   </td>
                 </tr>
               </table>
 
-              <!-- REVIEW BUTTON -->
               <table
                 role="presentation"
                 width="100%"
@@ -407,7 +388,7 @@ function buildEmailHtml(
                           "
                         >
                           <a
-                            href="${review}"
+                            href="${GOOGLE_REVIEW_URL}"
                             target="_blank"
                             style="
                               display:inline-block;
@@ -419,7 +400,7 @@ function buildEmailHtml(
                               font-weight:bold;
                             "
                           >
-                            ★ Αφήστε την αξιολόγησή σας
+                            ★ Αφήστε αξιολόγηση στο Google
                           </a>
                         </td>
                       </tr>
@@ -445,7 +426,6 @@ function buildEmailHtml(
             </td>
           </tr>
 
-          <!-- DIVIDER -->
           <tr>
             <td
               style="
@@ -460,7 +440,6 @@ function buildEmailHtml(
             </td>
           </tr>
 
-          <!-- ENGLISH -->
           <tr>
             <td
               style="
@@ -508,9 +487,9 @@ function buildEmailHtml(
                   line-height:1.7;
                 "
               >
-                Your feedback is very important to us
-                and helps us continue improving the
-                experience we offer our guests.
+                If you enjoyed your stay, we would
+                greatly appreciate it if you shared
+                your experience on Google.
               </p>
 
               <table
@@ -536,7 +515,7 @@ function buildEmailHtml(
                           "
                         >
                           <a
-                            href="${review}"
+                            href="${GOOGLE_REVIEW_URL}"
                             target="_blank"
                             style="
                               display:inline-block;
@@ -547,7 +526,7 @@ function buildEmailHtml(
                               font-weight:bold;
                             "
                           >
-                            Leave your review
+                            Leave a Google review
                           </a>
                         </td>
                       </tr>
@@ -559,7 +538,6 @@ function buildEmailHtml(
             </td>
           </tr>
 
-          <!-- FOOTER -->
           <tr>
             <td
               align="center"
